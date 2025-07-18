@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)"
+    ],
+    "deny": []
+  }
+}

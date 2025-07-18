@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "smart-journal-app",
-    "slug": "smart-journal-app",
+    "name": "Life Systems Architect",
+    "slug": "life-systems-architect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +24,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
