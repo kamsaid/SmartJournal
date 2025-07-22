@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { socraticEngine } from '@/ai/socraticEngine';
 import { aiOrchestrator } from '@/services/openai';
+import { DEMO_USER_UUID } from '@/utils/uuid';
 
 export default function CheckInScreen() {
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
@@ -26,7 +27,7 @@ export default function CheckInScreen() {
       // Mock user context for demo - in real app this would come from auth/storage
       const mockContext = {
         user: {
-          id: 'demo-user',
+          id: DEMO_USER_UUID,
           email: 'demo@example.com',
           current_phase: 1 as const,
           transformation_start_date: new Date().toISOString(),
@@ -74,7 +75,7 @@ export default function CheckInScreen() {
       // Process the response and generate follow-up
       const mockContext = {
         user: {
-          id: 'demo-user',
+          id: DEMO_USER_UUID,
           email: 'demo@example.com',
           current_phase: 1 as const,
           transformation_start_date: new Date().toISOString(),

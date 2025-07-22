@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { systemsFramework, SystemHealth, SystemArchitecture } from '@/services/lifeSystems/systemsFramework';
 import { lifeSystemsUtils } from '@/services/lifeSystems';
+import { DEMO_USER_UUID } from '@/utils/uuid';
 
 const { width } = Dimensions.get('window');
 
@@ -27,7 +28,7 @@ export default function LifeSystemsScreen({ navigation }: LifeSystemsScreenProps
 
   const loadSystemsData = async () => {
     try {
-      const userId = 'demo-user'; // In real app, get from auth
+      const userId = DEMO_USER_UUID; // Using demo UUID for testing - in real app, get from auth
       
       // Load systems architecture
       const architecture = await systemsFramework.assessSystemsHealth(userId);

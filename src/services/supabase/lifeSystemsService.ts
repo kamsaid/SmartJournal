@@ -1,4 +1,5 @@
 import { supabase, handleSupabaseResponse } from './client';
+import { generateUUID } from '@/utils/uuid';
 import { 
   LifeSystem, 
   Pattern, 
@@ -56,10 +57,11 @@ export const lifeSystemsService = {
       .from('life_systems')
       .select('*')
       .eq('user_id', userId)
-      .eq('system_type', systemType)
-      .single();
+      .eq('system_type', systemType);
 
-    return response.data;
+    // Handle case where no life system exists for this type
+    const systems = response.data || [];
+    return systems.length > 0 ? systems[0] : null;
   },
 
   // Update life system state
@@ -127,7 +129,7 @@ export const lifeSystemsService = {
     
     const newIntervention = {
       ...intervention,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
     };
 
     const updatedInterventions = [...current.interventions, newIntervention];

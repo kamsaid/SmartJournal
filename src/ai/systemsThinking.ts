@@ -6,6 +6,7 @@ import {
   SocraticConversation,
 } from '@/types/database';
 import { aiOrchestrator } from '@/services/openai';
+import { generateUUID } from '@/utils/uuid';
 
 export interface SystemsThinkingAnalysis {
   analysis_id: string;
@@ -183,7 +184,7 @@ export const systemsThinking = {
     const nextSteps = generateNextDevelopmentSteps(growthTrajectory, developmentAreas);
 
     return {
-      analysis_id: crypto.randomUUID(),
+      analysis_id: generateUUID(),
       user_id: userId,
       systems_thinking_score: overallScore,
       analysis_date: new Date().toISOString(),
@@ -209,7 +210,7 @@ export const systemsThinking = {
     const leveragePoints = await identifySystemLeveragePoints(userResponse, identifiedSystems);
 
     return {
-      map_id: crypto.randomUUID(),
+      map_id: generateUUID(),
       user_response: userResponse,
       identified_systems: identifiedSystems,
       relationships: relationships,
@@ -229,7 +230,7 @@ export const systemsThinking = {
     const interventionHierarchy = await createInterventionHierarchy(rootCauses, causalChains);
 
     return {
-      analysis_id: crypto.randomUUID(),
+      analysis_id: generateUUID(),
       root_causes: rootCauses,
       causal_chains: causalChains,
       systemic_causes: systemicCauses,

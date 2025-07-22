@@ -40,10 +40,11 @@ export const userService = {
     const response = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
-      .single();
+      .eq('id', userId);
 
-    return response.data;
+    // Handle case where user doesn't exist
+    const users = response.data || [];
+    return users.length > 0 ? users[0] : null;
   },
 
   // Update user's current transformation phase

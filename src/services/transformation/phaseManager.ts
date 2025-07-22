@@ -196,18 +196,62 @@ const PHASE_MILESTONES: Record<TransformationPhase, string[]> = {
 export const phaseManager = {
   // Assess current phase metrics
   assessPhaseProgress: async (userId: string): Promise<PhaseMetrics> => {
-    const user = await transformationService.getUserTransformationSummary(userId);
-    if (!user) throw new Error('User not found');
+    try {
+      const userSummary = await transformationService.getUserTransformationSummary(userId);
+      
+      // Handle case where user doesn't exist yet
+      if (!userSummary.user) {
+        return {
+          phase_number: 1,
+          days_in_phase: 0,
+          reflection_depth_average: 0,
+          breakthrough_count: 0,
+          pattern_recognition_score: 0,
+          systems_thinking_indicators: 0,
+          completion_readiness_score: 0,
+          key_insights: [],
+          remaining_milestones: PHASE_MILESTONES[1],
+        };
+      }
 
-    const currentPhase = await transformationService.getCurrentPhase(userId);
-    if (!currentPhase) throw new Error('No active phase found');
+      const currentPhase = await transformationService.getCurrentPhase(userId);
+      
+      // Handle case where no active phase exists - create default phase 1 data
+      if (!currentPhase) {
+        return {
+          phase_number: 1,
+          days_in_phase: 0,
+          reflection_depth_average: 0,
+          breakthrough_count: 0,
+          pattern_recognition_score: 0,
+          systems_thinking_indicators: 0,
+          completion_readiness_score: 0,
+          key_insights: [],
+          remaining_milestones: PHASE_MILESTONES[1],
+        };
+      }
 
-    const recentReflections = await transformationService.getRecentReflections(userId, 30);
-    const conversations = await transformationService.getUserConversations(userId, 10);
+      const recentReflections = await transformationService.getRecentReflections(userId, 30);
+      const conversations = await transformationService.getUserConversations(userId, 10);
 
-    const metrics = calculatePhaseMetrics(currentPhase, recentReflections, conversations);
-    
-    return metrics;
+      const metrics = calculatePhaseMetrics(currentPhase, recentReflections, conversations);
+      
+      return metrics;
+    } catch (error) {
+      console.error('Error in assessPhaseProgress:', error);
+      // Return safe default if anything fails
+      return {
+        phase_number: 1,
+        days_in_phase: 0,
+        reflection_depth_average: 0,
+        breakthrough_count: 0,
+        pattern_recognition_score: 0,
+        systems_thinking_indicators: 0,
+        completion_readiness_score: 0,
+        key_insights: [],
+        remaining_milestones: PHASE_MILESTONES[1],
+      };
+    }
   },
 
   // Check if user is ready to advance to next phase
@@ -380,45 +424,74 @@ export const phaseManager = {
     userId: string,
     latestReflection?: DailyReflection
   ): Promise<PhaseAssessment> => {
-    const metrics = await phaseManager.assessPhaseProgress(userId);
-    const user = await transformationService.getUserTransformationSummary(userId);
-    
-    // Analyze latest responses for breakthrough indicators
-    const breakthroughIndicators = [];
-    const growthAreas = [];
-    
-    if (latestReflection) {
-      // AI analysis of latest reflection for phase progression signals
-      const aiContext = { user: user.user };
-      const analysisResponse = await aiOrchestrator.recognizePatterns(
-        aiContext,
-        JSON.stringify(latestReflection.responses)
-      );
+    try {
+      const metrics = await phaseManager.assessPhaseProgress(userId);
+      const userSummary = await transformationService.getUserTransformationSummary(userId);
       
-      if (analysisResponse.metadata.patterns_identified) {
-        breakthroughIndicators.push(...analysisResponse.metadata.patterns_identified);
+      // Handle case where user doesn't exist yet - return default assessment
+      if (!userSummary.user) {
+        return {
+          phase_number: 1,
+          readiness_score: 0,
+          confidence_level: 0.5,
+          assessment_date: new Date().toISOString(),
+          breakthrough_indicators: [],
+          growth_areas: ['Complete initial setup to begin transformation journey'],
+          recommended_actions: ['Set up your user profile', 'Start with Phase 1 - Recognition'],
+          estimated_completion_days: 7,
+        };
       }
+      
+      // Analyze latest responses for breakthrough indicators
+      const breakthroughIndicators = [];
+      const growthAreas = [];
+      
+      if (latestReflection) {
+        // AI analysis of latest reflection for phase progression signals
+        const aiContext = { user: userSummary.user };
+        const analysisResponse = await aiOrchestrator.recognizePatterns(
+          aiContext,
+          JSON.stringify(latestReflection.responses)
+        );
+        
+        if (analysisResponse.metadata.patterns_identified) {
+          breakthroughIndicators.push(...analysisResponse.metadata.patterns_identified);
+        }
+      }
+
+      // Calculate dynamic readiness score
+      const baseReadiness = metrics.completion_readiness_score;
+      const recentProgress = calculateRecentProgressBoost(userSummary.recent_reflections);
+      const readinessScore = Math.min(1, baseReadiness + recentProgress);
+
+      // Estimate completion timeline
+      const progressRate = calculateProgressRate(userSummary.recent_reflections, metrics.phase_number);
+      const estimatedDays = Math.max(1, Math.round((1 - readinessScore) / progressRate));
+
+      return {
+        phase_number: metrics.phase_number,
+        readiness_score: readinessScore,
+        confidence_level: calculateAssessmentConfidence(userSummary.recent_reflections),
+        assessment_date: new Date().toISOString(),
+        breakthrough_indicators: breakthroughIndicators,
+        growth_areas: identifyGrowthAreas(metrics),
+        recommended_actions: generateRecommendedActions(metrics, readinessScore),
+        estimated_completion_days: estimatedDays,
+      };
+    } catch (error) {
+      console.error('Error in performRealTimeAssessment:', error);
+      // Return safe default assessment if anything fails
+      return {
+        phase_number: 1,
+        readiness_score: 0,
+        confidence_level: 0.5,
+        assessment_date: new Date().toISOString(),
+        breakthrough_indicators: [],
+        growth_areas: ['Unable to assess current progress'],
+        recommended_actions: ['Please try again or contact support'],
+        estimated_completion_days: 7,
+      };
     }
-
-    // Calculate dynamic readiness score
-    const baseReadiness = metrics.completion_readiness_score;
-    const recentProgress = calculateRecentProgressBoost(user.recent_reflections);
-    const readinessScore = Math.min(1, baseReadiness + recentProgress);
-
-    // Estimate completion timeline
-    const progressRate = calculateProgressRate(user.recent_reflections, metrics.phase_number);
-    const estimatedDays = Math.max(1, Math.round((1 - readinessScore) / progressRate));
-
-    return {
-      phase_number: metrics.phase_number,
-      readiness_score: readinessScore,
-      confidence_level: calculateAssessmentConfidence(user.recent_reflections),
-      assessment_date: new Date().toISOString(),
-      breakthrough_indicators: breakthroughIndicators,
-      growth_areas: identifyGrowthAreas(metrics),
-      recommended_actions: generateRecommendedActions(metrics, readinessScore),
-      estimated_completion_days: estimatedDays,
-    };
   },
 
   // Generate dynamic, personalized content based on phase and user state
@@ -491,50 +564,64 @@ export const phaseManager = {
 
   // Get phase-specific motivation and encouragement
   getPhaseEncouragement: async (userId: string): Promise<string> => {
-    const assessment = await phaseManager.performRealTimeAssessment(userId);
-    const phase = assessment.phase_number;
-    const readiness = assessment.readiness_score;
+    try {
+      const assessment = await phaseManager.performRealTimeAssessment(userId);
+      const phase = assessment.phase_number;
+      const readiness = assessment.readiness_score;
 
-    const encouragementTemplates = {
-      1: {
-        low: "You're beginning to see the patterns that have been guiding your life. This recognition is the first step toward designing the reality you want.",
-        medium: "Your awareness of reactive vs. proactive thinking is growing. You're starting to question assumptions that have limited you for years.",
-        high: "You're on the verge of a major breakthrough in understanding how life architects think differently. Keep pushing deeper.",
-      },
-      2: {
-        low: "The leverage principle is becoming clearer to you. Small changes in the right places can transform everything.",
-        medium: "You're identifying connections between life areas that most people never see. This systems thinking will accelerate your growth exponentially.",
-        high: "Your understanding of leverage is reaching a tipping point. You're ready to start building systems that make success inevitable.",
-      },
-      3: {
-        low: "You're shifting from symptom-solving to root cause analysis. This change in thinking will revolutionize how you approach challenges.",
-        medium: "The meta-patterns in your life are becoming visible. You're learning to design solutions at the system level.",
-        high: "You're mastering the art of system design. Problems are becoming opportunities for architectural thinking.",
-      },
-      4: {
-        low: "Your challenges are transforming into design opportunities. You're building the confidence of a life architect.",
-        medium: "Systems thinking is becoming your default mode. You're creating inevitable outcomes through intelligent design.",
-        high: "You've unlocked infinite leverage. Your ability to architect outcomes is reaching mastery level.",
-      },
-      5: {
-        low: "You're beginning to see the exponential possibilities that proper system architecture creates.",
-        medium: "Your vision of what's possible is expanding dramatically. You're designing for compound transformation.",
-        high: "You can now envision and design outcomes that most people consider impossible. Your transformation is accelerating.",
-      },
-      6: {
-        low: "You're integrating architectural thinking into your daily decisions. Living by design is becoming natural.",
-        medium: "You maintain systems perspective even under pressure. Your life architecture is becoming robust and consistent.",
-        high: "You embody the identity of a life systems architect. Your transformation is complete and sustainable.",
-      },
-      7: {
-        low: "You're sharing your transformation wisdom and helping others see new possibilities.",
-        medium: "You've mastered the meta-skill and continue evolving your life architecture.",
-        high: "You represent the complete transformation - a true life systems architect inspiring others.",
-      },
-    };
+      const encouragementTemplates = {
+        1: {
+          low: "You're beginning to see the patterns that have been guiding your life. This recognition is the first step toward designing the reality you want.",
+          medium: "Your awareness of reactive vs. proactive thinking is growing. You're starting to question assumptions that have limited you for years.",
+          high: "You're on the verge of a major breakthrough in understanding how life architects think differently. Keep pushing deeper.",
+        },
+        2: {
+          low: "The leverage principle is becoming clearer to you. Small changes in the right places can transform everything.",
+          medium: "You're identifying connections between life areas that most people never see. This systems thinking will accelerate your growth exponentially.",
+          high: "Your understanding of leverage is reaching a tipping point. You're ready to start building systems that make success inevitable.",
+        },
+        3: {
+          low: "You're shifting from symptom-solving to root cause analysis. This change in thinking will revolutionize how you approach challenges.",
+          medium: "The meta-patterns in your life are becoming visible. You're learning to design solutions at the system level.",
+          high: "You're mastering the art of system design. Problems are becoming opportunities for architectural thinking.",
+        },
+        4: {
+          low: "You're beginning to see how problems can be reframed as design challenges. This perspective shift is transformational.",
+          medium: "Your ability to create systems that produce inevitable outcomes is developing rapidly. You're becoming unstoppable.",
+          high: "You've reached the transformation phase. You're now thinking like a life systems architect. The possibilities are infinite.",
+        },
+        5: {
+          low: "Your vision of what's possible is expanding beyond previous limitations. You're seeing exponential potential.",
+          medium: "You're designing outcomes that seemed impossible before. Your architectural thinking is reaching mastery level.",
+          high: "You're ready to manifest the life you're truly capable of. Your vision is becoming your reality.",
+        },
+        6: {
+          low: "You're integrating systems thinking into your daily reality. Every decision becomes an architectural choice.",
+          medium: "Your life is becoming a masterpiece of intentional design. You're living as the architect you've become.",
+          high: "You've achieved the architected life. You're now a master of life systems design.",
+        },
+        7: {
+          low: "You're integrating all phases into a complete transformation. You've become who you were meant to be.",
+          medium: "Your journey to becoming a Life Systems Architect is nearly complete. You're embodying the wisdom you've gained.",
+          high: "You've completed the transformation. You are now a Life Systems Architect, ready to design unlimited possibilities.",
+        },
+      };
 
-    const readinessLevel = readiness > 0.7 ? 'high' : readiness > 0.4 ? 'medium' : 'low';
-    return encouragementTemplates[phase][readinessLevel];
+      const levelKey = readiness < 0.4 ? 'low' : readiness < 0.7 ? 'medium' : 'high';
+      const phaseTemplates = encouragementTemplates[phase as keyof typeof encouragementTemplates];
+      
+      if (phaseTemplates) {
+        return phaseTemplates[levelKey as keyof typeof phaseTemplates];
+      }
+
+      // Default encouragement if phase not found
+      return "You're on a remarkable journey of transformation. Every step forward is building the life you're designing.";
+      
+    } catch (error) {
+      console.error('Error getting phase encouragement:', error);
+      // Return default encouragement if anything fails
+      return "Welcome to your transformation journey. Take it one step at a time, and trust the process of becoming who you're meant to be.";
+    }
   },
 };
 

@@ -8,6 +8,7 @@ import {
 import { systemsFramework } from '@/services/lifeSystems';
 import { patternRecognition } from '@/ai';
 import { aiOrchestrator } from '@/services/openai';
+import { generateUUID } from '@/utils/uuid';
 
 export interface LeverageAnalysis {
   leverage_point_id: string;
@@ -285,7 +286,7 @@ async function identifyKeystoneOpportunities(
   // Morning routine as keystone opportunity
   if (avgScore < 6) {
     opportunities.push({
-      leverage_point_id: crypto.randomUUID(),
+      leverage_point_id: generateUUID(),
       intervention_name: 'Optimized Morning Routine',
       leverage_type: 'keystone',
       impact_score: 0.85,
@@ -310,7 +311,7 @@ async function identifyKeystoneOpportunities(
   const healthSystem = systemsHealth.systems_health.find((s: any) => s.system_type === 'health');
   if (healthSystem?.overall_score < 5) {
     opportunities.push({
-      leverage_point_id: crypto.randomUUID(),
+      leverage_point_id: generateUUID(),
       intervention_name: 'Consistent Exercise System',
       leverage_type: 'keystone',
       impact_score: 0.8,
@@ -344,7 +345,7 @@ async function identifyBottleneckRemovals(
   const healthSystem = systemsHealth.systems_health.find((s: any) => s.system_type === 'health');
   if (healthSystem?.overall_score < 5) {
     bottlenecks.push({
-      leverage_point_id: crypto.randomUUID(),
+      leverage_point_id: generateUUID(),
       intervention_name: 'Energy Management System',
       leverage_type: 'bottleneck',
       impact_score: 0.9,
@@ -372,7 +373,7 @@ async function identifyBottleneckRemovals(
 
   if (avgSystemScore < 6) {
     bottlenecks.push({
-      leverage_point_id: crypto.randomUUID(),
+      leverage_point_id: generateUUID(),
       intervention_name: 'Time Architecture System',
       leverage_type: 'bottleneck',
       impact_score: 0.85,
@@ -406,7 +407,7 @@ async function identifyMultiplierEffects(
   const growthSystem = systemsHealth.systems_health.find((s: any) => s.system_type === 'growth');
   if (growthSystem?.overall_score < 7) {
     multipliers.push({
-      leverage_point_id: crypto.randomUUID(),
+      leverage_point_id: generateUUID(),
       intervention_name: 'Accelerated Learning System',
       leverage_type: 'multiplier',
       impact_score: 0.8,
@@ -438,7 +439,7 @@ async function identifyGatewayHabits(
 
   // Environment optimization as gateway
   gateways.push({
-    leverage_point_id: crypto.randomUUID(),
+    leverage_point_id: generateUUID(),
     intervention_name: 'Environment Design Optimization',
     leverage_type: 'gateway',
     impact_score: 0.7,
@@ -469,7 +470,7 @@ async function identifyCatalystInterventions(
 
   // Mindset shift catalyst
   catalysts.push({
-    leverage_point_id: crypto.randomUUID(),
+    leverage_point_id: generateUUID(),
     intervention_name: 'Systems Thinking Mindset Shift',
     leverage_type: 'catalyst',
     impact_score: 0.95,
@@ -505,7 +506,7 @@ async function identifyCompoundLeverageChains(
   
   if (healthLeverage.length > 0) {
     chains.push({
-      chain_id: crypto.randomUUID(),
+      chain_id: generateUUID(),
       description: 'Health → Energy → Productivity Compound Chain',
       leverage_points: healthLeverage.slice(0, 3).map(lp => lp.leverage_point_id),
       total_impact: 0.9,

@@ -1,4 +1,5 @@
 import { aiOrchestrator, AIContext } from '@/services/openai';
+import { generateUUID } from '@/utils/uuid';
 import {
   User,
   DailyReflection,
@@ -116,7 +117,7 @@ export const socraticEngine = {
     );
 
     const question: GeneratedQuestion = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       question: aiResponse.content,
       category,
       depth_level: targetDepth,
@@ -211,7 +212,7 @@ Target depth: ${newContext.currentDepthLevel}`;
     const aiResponse = await aiOrchestrator.generateSocraticQuestion(aiContext, prompt);
 
     return {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       question: aiResponse.content,
       category: previousQuestion.category,
       depth_level: newContext.currentDepthLevel,
@@ -265,7 +266,7 @@ Focus on revealing system-level connections they haven't considered.`;
     const aiResponse = await aiOrchestrator.generateSocraticQuestion(aiContext, connectingPrompt);
 
     return {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       question: aiResponse.content,
       category: 'system_connecting',
       depth_level: context.currentDepthLevel,

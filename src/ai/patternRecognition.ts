@@ -9,6 +9,7 @@ import {
 } from '@/types/database';
 import { aiOrchestrator } from '@/services/openai';
 import { lifeSystemsService } from '@/services/supabase';
+import { generateUUID } from '@/utils/uuid';
 
 export interface PatternAnalysis {
   pattern_id: string;
@@ -283,7 +284,7 @@ async function analyzeBehavioralPatterns(
 
   if (behaviorIndicators.length >= 3) {
     behavioralPatterns.push({
-      pattern_id: crypto.randomUUID(),
+      pattern_id: generateUUID(),
       pattern_type: 'behavioral',
       confidence_score: Math.min(behaviorIndicators.length / 10, 1),
       description: 'Recurring behavioral patterns detected in responses',
@@ -335,7 +336,7 @@ async function analyzeCognitivePatterns(
 
   if (cognitiveIndicators.length >= 3) {
     cognitivePatterns.push({
-      pattern_id: crypto.randomUUID(),
+      pattern_id: generateUUID(),
       pattern_type: 'cognitive',
       confidence_score: Math.min(cognitiveIndicators.length / 15, 1),
       description: 'Recurring thought patterns and beliefs detected',
@@ -386,7 +387,7 @@ async function analyzeEmotionalPatterns(
 
   if (emotionalIndicators.length >= 3) {
     emotionalPatterns.push({
-      pattern_id: crypto.randomUUID(),
+      pattern_id: generateUUID(),
       pattern_type: 'emotional',
       confidence_score: Math.min(emotionalIndicators.length / 12, 1),
       description: 'Recurring emotional response patterns detected',
@@ -422,7 +423,7 @@ async function analyzeSystemicPatterns(
 
   if (variance > 4) { // High variance indicates systemic imbalance
     systemicPatterns.push({
-      pattern_id: crypto.randomUUID(),
+      pattern_id: generateUUID(),
       pattern_type: 'systemic',
       confidence_score: Math.min(variance / 10, 1),
       description: 'Significant imbalance across life systems detected',
@@ -472,7 +473,7 @@ async function analyzeRelationalPatterns(
 
   if (relationalIndicators.length >= 3) {
     relationalPatterns.push({
-      pattern_id: crypto.randomUUID(),
+      pattern_id: generateUUID(),
       pattern_type: 'relational',
       confidence_score: Math.min(relationalIndicators.length / 10, 1),
       description: 'Recurring relational patterns detected',
@@ -509,7 +510,7 @@ async function clusterRelatedPatterns(patterns: PatternAnalysis[]): Promise<Patt
   Object.entries(groupedPatterns).forEach(([key, relatedPatterns]) => {
     if (relatedPatterns.length >= 2) {
       clusters.push({
-        cluster_id: crypto.randomUUID(),
+        cluster_id: generateUUID(),
         theme: `Patterns affecting ${key.replace('-', ' and ')} systems`,
         related_patterns: relatedPatterns,
         meta_pattern_description: `Multiple patterns converging on ${key} areas`,

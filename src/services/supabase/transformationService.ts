@@ -1,4 +1,5 @@
 import { supabase, handleSupabaseResponse } from './client';
+import { generateUUID } from '@/utils/uuid';
 import { 
   Phase, 
   DailyReflection, 
@@ -36,10 +37,11 @@ export const transformationService = {
       .from('phases')
       .select('*')
       .eq('user_id', userId)
-      .eq('completion_status', 'in_progress')
-      .single();
+      .eq('completion_status', 'in_progress');
 
-    return response.data;
+    // Handle case where no active phase exists
+    const phases = response.data || [];
+    return phases.length > 0 ? phases[0] : null;
   },
 
   // Get all phases for a user
@@ -151,10 +153,11 @@ export const transformationService = {
       .from('daily_reflections')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', date)
-      .single();
+      .eq('date', date);
 
-    return response.data;
+    // Handle case where no reflection exists for this date
+    const reflections = response.data || [];
+    return reflections.length > 0 ? reflections[0] : null;
   },
 
   // Get recent reflections for a user
@@ -199,7 +202,7 @@ export const transformationService = {
       user_id: userId,
       conversation_thread: [
         {
-          message_id: crypto.randomUUID(),
+          message_id: generateUUID(),
           role: 'user' as const,
           content: initialMessage,
           timestamp: new Date().toISOString(),
@@ -237,7 +240,7 @@ export const transformationService = {
     const current = handleSupabaseResponse(currentResponse);
 
     const newMessage = {
-      message_id: crypto.randomUUID(),
+      message_id: generateUUID(),
       role,
       content,
       timestamp: new Date().toISOString(),
@@ -298,13 +301,27 @@ export const transformationService = {
 
   // Get comprehensive user transformation summary
   getUserTransformationSummary: async (userId: string) => {
+    // Use safer query without .single() to avoid errors when user doesn't exist
     const userResponse = await supabase
       .from('users')
       .select('*')
-      .eq('id', userId)
-      .single();
+      .eq('id', userId);
 
-    const user = handleSupabaseResponse(userResponse);
+    // Handle case where user doesn't exist or multiple users found
+    const users = userResponse.data || [];
+    const user = users.length > 0 ? users[0] : null;
+
+    // If no user found, return a default structure to prevent errors
+    if (!user) {
+      return {
+        user: null,
+        phases: [],
+        recent_reflections: [],
+        life_systems: [],
+        patterns: [],
+        transformation_days: 0,
+      };
+    }
 
     const phases = await supabase
       .from('phases')
@@ -337,10 +354,12 @@ export const transformationService = {
       recent_reflections: recentReflections.data || [],
       life_systems: lifeSystems.data || [],
       patterns: patterns.data || [],
-      transformation_days: Math.floor(
-        (Date.now() - new Date(user.transformation_start_date).getTime()) / 
-        (1000 * 60 * 60 * 24)
-      ),
+      transformation_days: user.transformation_start_date 
+        ? Math.floor(
+            (Date.now() - new Date(user.transformation_start_date).getTime()) / 
+            (1000 * 60 * 60 * 24)
+          )
+        : 0,
     };
   },
 };

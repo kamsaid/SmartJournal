@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { phaseManager, PhaseAssessment } from '@/services/transformation/phaseManager';
+import { DEMO_USER_UUID } from '@/utils/uuid';
 
 const { width } = Dimensions.get('window');
 
@@ -37,7 +38,7 @@ export default function PhaseJourneyScreen({ navigation }: PhaseJourneyScreenPro
 
   const loadPhaseJourney = async () => {
     try {
-      const userId = 'demo-user'; // In real app, get from auth
+      const userId = DEMO_USER_UUID; // Using demo UUID for testing - in real app, get from auth
       
       // Get current assessment
       const assessment = await phaseManager.performRealTimeAssessment(userId);
