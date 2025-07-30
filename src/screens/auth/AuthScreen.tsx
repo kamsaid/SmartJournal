@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { auth } from '@/services/supabase/client';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useAuth } from '@/hooks/useAuth';
+import { userService } from '@/services/supabase/userService';
 
 interface AuthScreenProps {
   navigation: any;
@@ -10,24 +11,70 @@ export default function AuthScreen({ navigation }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
+  
+  // Use the authentication hook
+  const { signIn, signUp, user, loading, error } = useAuth();
+
+  // Log when user is authenticated (navigation handled by AppNavigator)
+  useEffect(() => {
+    if (user) {
+      console.log('User authenticated successfully:', user.email);
+    }
+  }, [user]);
+
+  // Show auth errors
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Authentication Error', error);
+    }
+  }, [error]);
 
   const handleAuth = async () => {
-    if (!email || !password) return;
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
     
-    setLoading(true);
     try {
       if (isSignUp) {
-        await auth.signUp(email, password);
+        const result = await signUp(email, password);
+        
+        if (result.requiresConfirmation) {
+          // Email confirmation required - show success message
+          Alert.alert(
+            'Check Your Email', 
+            'We\'ve sent you a confirmation email. Please click the link in the email to complete your signup.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          // Immediate success - show welcome message
+          Alert.alert(
+            'Account Created', 
+            'Welcome! Your account has been created successfully. You can now access the app.',
+            [{ text: 'OK' }]
+          );
+        }
       } else {
-        await auth.signIn(email, password);
+        await signIn(email, password);
+        console.log('Sign in successful - navigation will happen automatically');
       }
-      navigation.navigate('Onboarding');
     } catch (error) {
       console.error('Auth error:', error);
-    } finally {
-      setLoading(false);
+      
+      // Handle any remaining error cases
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      
+      // For sign up, most errors will be handled above, this is for unexpected errors
+      if (isSignUp) {
+        Alert.alert('Signup Error', errorMessage);
+      }
+      // For sign in, errors will be shown via useEffect from the auth hook
     }
+  };
+
+  // Clear any existing errors when switching between sign in/up
+  const toggleAuthMode = () => {
+    setIsSignUp(!isSignUp);
   };
 
   return (
@@ -69,12 +116,71 @@ export default function AuthScreen({ navigation }: AuthScreenProps) {
 
         <TouchableOpacity
           style={styles.switchButton}
-          onPress={() => setIsSignUp(!isSignUp)}
+          onPress={toggleAuthMode}
         >
           <Text style={styles.switchText}>
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
+
+        {/* Quick test account for development */}
+        <TouchableOpacity
+          style={styles.demoButton}
+          onPress={() => {
+            setEmail('dev@smartjournal.com'); // Use different email to avoid confirmation issues
+            setPassword('password123');
+          }}
+        >
+          <Text style={styles.demoButtonText}>
+            Use Dev Account (Fresh Email)
+          </Text>
+        </TouchableOpacity>
+
+        {/* Emergency manual confirmation - working functionality */}
+        {__DEV__ && (
+          <>
+            {/* Emergency manual confirmation */}
+            <TouchableOpacity
+              style={styles.emergencyButton}
+              onPress={async () => {
+                if (!email) {
+                  Alert.alert('Error', 'Please enter an email address first');
+                  return;
+                }
+                
+                try {
+                  console.log('🚨 Emergency: Manually confirming user');
+                  const result = await userService.manuallyConfirmUser(email);
+                  
+                  Alert.alert(
+                    result.success ? '✅ Success' : '❌ Error',
+                    result.message,
+                    [{ text: 'OK' }]
+                  );
+                  
+                  if (result.success) {
+                    // Try to sign in after successful confirmation
+                    setTimeout(() => {
+                      Alert.alert(
+                        'Try Sign In',
+                        'User confirmed! Now try signing in with your password.',
+                        [{ text: 'OK' }]
+                      );
+                    }, 1000);
+                  }
+                } catch (error) {
+                  console.error('Emergency confirmation error:', error);
+                  Alert.alert('Error', 'Failed to manually confirm user');
+                }
+              }}
+            >
+              <Text style={styles.emergencyButtonText}>
+                🚨 EMERGENCY: Confirm User
+              </Text>
+            </TouchableOpacity>
+            
+          </>
+        )}
       </View>
     </View>
   );
@@ -132,5 +238,33 @@ const styles = StyleSheet.create({
   switchText: {
     color: '#6366f1',
     fontSize: 14,
+  },
+  demoButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  demoButtonText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emergencyButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#d97706',
+  },
+  emergencyButtonText: {
+    color: '#d97706',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

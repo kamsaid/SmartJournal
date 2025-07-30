@@ -1,3 +1,6 @@
+// Import polyfills first, before any other imports
+import './src/utils/polyfills';
+
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

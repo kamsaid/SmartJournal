@@ -20,10 +20,23 @@ export const handleSupabaseResponse = <T>(
 // Authentication helpers
 export const auth = {
   signUp: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    // For development, we can try to disable email confirmation
+    // In production, you'll want email confirmation enabled
+    const signUpOptions = config.app.environment === 'development' ? {
       email,
       password,
-    });
+      options: {
+        emailRedirectTo: undefined, // This helps avoid email confirmation in dev
+      }
+    } : {
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${config.supabase.url}/auth/v1/verify`, // Proper redirect for production
+      }
+    };
+
+    const { data, error } = await supabase.auth.signUp(signUpOptions);
     return handleSupabaseResponse({ data, error });
   },
 

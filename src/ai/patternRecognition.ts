@@ -2,7 +2,7 @@ import {
   Pattern,
   PatternType,
   DailyReflection,
-  SocraticConversation,
+  WisdomConversation,
   LifeSystem,
   LifeSystemType,
   User,
@@ -309,7 +309,7 @@ async function analyzeBehavioralPatterns(
 
 async function analyzeCognitivePatterns(
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): Promise<PatternAnalysis[]> {
   const cognitivePatterns: PatternAnalysis[] = [];
 
@@ -361,7 +361,7 @@ async function analyzeCognitivePatterns(
 
 async function analyzeEmotionalPatterns(
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): Promise<PatternAnalysis[]> {
   const emotionalPatterns: PatternAnalysis[] = [];
 
@@ -448,7 +448,7 @@ async function analyzeSystemicPatterns(
 
 async function analyzeRelationalPatterns(
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): Promise<PatternAnalysis[]> {
   const relationalPatterns: PatternAnalysis[] = [];
 
@@ -616,7 +616,7 @@ async function getUserReflections(userId: string, days: number): Promise<DailyRe
   return [];
 }
 
-async function getUserConversations(userId: string, limit: number): Promise<SocraticConversation[]> {
+async function getUserConversations(userId: string, limit: number): Promise<WisdomConversation[]> {
   // Implementation would fetch user conversations from database
   return [];
 }

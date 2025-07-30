@@ -2,11 +2,11 @@ import {
   User,
   Phase,
   DailyReflection,
-  SocraticConversation,
+  WisdomConversation,
   TransformationPhase,
 } from '@/types/database';
 import { transformationService } from '@/services/supabase';
-import { socraticEngine } from '@/ai/socraticEngine';
+import { wisdomEngine } from '@/ai/wisdomEngine';
 import { aiOrchestrator } from '@/services/openai';
 
 export interface PhaseMetrics {
@@ -523,7 +523,7 @@ export const phaseManager = {
         break;
     }
 
-    const aiResponse = await aiOrchestrator.generateSocraticQuestion(aiContext, contentPrompt);
+    const aiResponse = await aiOrchestrator.generateWisdomGuidedQuestion(aiContext, contentPrompt);
 
     return {
       content_type: contentType,
@@ -629,7 +629,7 @@ export const phaseManager = {
 function calculatePhaseMetrics(
   phase: Phase,
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): PhaseMetrics {
   const daysInPhase = Math.floor(
     (Date.now() - new Date(phase.start_date).getTime()) / (1000 * 60 * 60 * 24)
@@ -662,7 +662,7 @@ function calculatePhaseMetrics(
 
 function calculateSystemsThinkingScore(
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): number {
   // Analyze language patterns for systems thinking indicators
   const systemsKeywords = ['system', 'pattern', 'connection', 'leverage', 'design', 'architecture'];
@@ -694,7 +694,7 @@ function calculatePatternRecognitionScore(reflections: DailyReflection[]): numbe
 function calculateReadinessScore(
   phase: Phase,
   reflections: DailyReflection[],
-  conversations: SocraticConversation[]
+  conversations: WisdomConversation[]
 ): number {
   const criteria = PHASE_COMPLETION_CRITERIA[phase.phase_number];
   
@@ -903,7 +903,7 @@ function generatePhaseSpecificQuestionPrompt(assessment: PhaseAssessment): strin
   const phase = assessment.phase_number;
   const readiness = assessment.readiness_score;
   
-  return `Generate a Socratic question for Phase ${phase} (readiness: ${readiness.toFixed(2)}). 
+  return `Generate a wisdom-guided question for Phase ${phase} (readiness: ${readiness.toFixed(2)}). 
     Focus on ${assessment.growth_areas.join(', ')}. 
     The question should challenge their current thinking and reveal deeper patterns.`;
 }

@@ -3,7 +3,7 @@ import { generateUUID } from '@/utils/uuid';
 import { 
   Phase, 
   DailyReflection, 
-  SocraticConversation, 
+  WisdomConversation, 
   TransformationPhase 
 } from '@/types/database';
 
@@ -193,11 +193,11 @@ export const transformationService = {
     return handleSupabaseResponse(response);
   },
 
-  // Socratic Conversation Management
-  createSocraticConversation: async (
+  // Wisdom Conversation Management
+  createWisdomConversation: async (
     userId: string,
     initialMessage: string
-  ): Promise<SocraticConversation> => {
+  ): Promise<WisdomConversation> => {
     const conversationData = {
       user_id: userId,
       conversation_thread: [
@@ -215,7 +215,7 @@ export const transformationService = {
     };
 
     const response = await supabase
-      .from('socratic_conversations')
+      .from('wisdom_conversations')
       .insert([conversationData])
       .select()
       .single();
@@ -229,10 +229,10 @@ export const transformationService = {
     role: 'ai' | 'user',
     content: string,
     metadata?: Record<string, any>
-  ): Promise<SocraticConversation> => {
+  ): Promise<WisdomConversation> => {
     // First get the current conversation
     const currentResponse = await supabase
-      .from('socratic_conversations')
+      .from('wisdom_conversations')
       .select('*')
       .eq('id', conversationId)
       .single();
@@ -250,7 +250,7 @@ export const transformationService = {
     const updatedThread = [...current.conversation_thread, newMessage];
 
     const response = await supabase
-      .from('socratic_conversations')
+      .from('wisdom_conversations')
       .update({
         conversation_thread: updatedThread,
         updated_at: new Date().toISOString(),
@@ -268,9 +268,9 @@ export const transformationService = {
     revelations: string[],
     followUps: string[],
     phaseProgressionIndicators: string[]
-  ): Promise<SocraticConversation> => {
+  ): Promise<WisdomConversation> => {
     const response = await supabase
-      .from('socratic_conversations')
+      .from('wisdom_conversations')
       .update({
         revelations,
         follow_ups: followUps,
@@ -288,15 +288,23 @@ export const transformationService = {
   getUserConversations: async (
     userId: string,
     limit: number = 10
-  ): Promise<SocraticConversation[]> => {
+  ): Promise<WisdomConversation[]> => {
     const response = await supabase
-      .from('socratic_conversations')
+      .from('wisdom_conversations')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     return handleSupabaseResponse(response) || [];
+  },
+
+  // Legacy method for backward compatibility
+  createSocraticConversation: async (
+    userId: string,
+    initialMessage: string
+  ): Promise<WisdomConversation> => {
+    return transformationService.createWisdomConversation(userId, initialMessage);
   },
 
   // Get comprehensive user transformation summary

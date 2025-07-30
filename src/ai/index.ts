@@ -1,5 +1,6 @@
 // Export AI services and engines
-export { default as socraticEngine } from './socraticEngine';
+export { default as wisdomEngine } from './wisdomEngine';
+export { default as socraticEngine } from './wisdomEngine'; // Legacy export for backward compatibility
 export { default as patternRecognition } from './patternRecognition';
 
 // Re-export AI orchestrator and prompts
@@ -11,7 +12,7 @@ export type {
   QuestionContext,
   GeneratedQuestion,
   QuestionResponse,
-} from './socraticEngine';
+} from './wisdomEngine';
 
 export type {
   PatternAnalysis,
@@ -90,7 +91,7 @@ export const aiSystemUtils = {
       quality -= 0.4;
     }
 
-    // Check for question marks (for Socratic questions)
+    // Check for question marks (for wisdom questions)
     if (expectedType === 'question' && !response.includes('?')) {
       issues.push('Question should contain question mark');
       quality -= 0.3;

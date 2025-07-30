@@ -4,11 +4,11 @@ This file contains essential context and guidelines for developing the Life Syst
 
 ## Project Overview
 
-**Life Systems Architect** is a transformational mobile app that uses Socratic AI to guide users from reactive problem-solving to proactive life design. Built with Expo architecture, featuring sophisticated AI systems and a seven-phase transformation framework.
+**Life Systems Architect** is a transformational mobile app that uses short, powerful AI questions to guide users from just reacting to problems to actively designing their life. Built with Expo architecture, featuring smart AI systems and a seven-phase growth journey.
 
 ## Core Philosophy
 
-A Socratic AI companion that guides users through the most important transformation of their lives—developing systems thinking to architect the reality they want rather than merely reacting to circumstances.
+A thoughtful AI companion that guides users through an important transformation—learning to design the life they want instead of just reacting to whatever happens.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ A Socratic AI companion that guides users through the most important transformat
 - **AI**: Advanced OpenAI GPT-4 with multi-system orchestration
 - **Design**: Cosmic purple/aurora blue, glassmorphic design
 - **Navigation**: React Navigation with transformation-aware routing
-- **Core Systems**: Socratic questioning, pattern recognition, leverage analysis
+- **Core Systems**: Thoughtful questioning, pattern recognition, leverage analysis
 
 ## Development Workflow
 
@@ -43,10 +43,10 @@ design-system/              # Design tokens and styled components
 
 ## The Seven-Phase Transformation
 
-### **Phase 1: Recognition** - "The Two Types of People"
-- Reveal those who react to life vs. those who architect it
-- Socratic questioning to identify current life patterns
-- Awakening to the difference between problem-solvers and system-builders
+### **Phase 1: Wisdom Through Scientific Inquiry** - "Building Awareness Using Proven Methods"
+- Use scientifically-proven psychological methods to build deep self-awareness
+- Rotate through CBT Socratic questioning, motivational interviewing, Stoic practices
+- Apply 5-Why methodology and narrative concrete questioning for systematic insight development
 
 ### **Phase 2: Understanding** - "The Leverage Principle"
 - Shift from working harder to working on the right systems
@@ -89,18 +89,18 @@ design-system/              # Design tokens and styled components
 
 ## Daily Life Architecture Practice
 
-### **Dynamic Socratic Questioning**
-Each day, the AI presents 3-5 profound questions tailored to the user's current life phase and growth areas:
+### **Daily Check-in Questions**
+Each day, the AI asks 3-5 short, scientifically-based questions (3-8 words) using proven psychological methods:
 
-**Sample Deep Questions:**
-- "What pattern from your past are you unconsciously recreating, and what would breaking it unlock?"
-- "If you could design the perfect system for your biggest challenge, what would that look like?"
-- "What's one belief about yourself that, if changed, would transform multiple areas of your life?"
-- "Where are you optimizing tactics when you should be redesigning strategy?"
-- "What would you do if you knew your current approach was guaranteed to work?"
+**Sample Questions (Phase 1 - Scientific Methods):**
+- "When do you feel most you?" *(Open-ended & Concrete)*
+- "What story am I rehearsing right now?" *(CBT Socratic)*
+- "If you chose to act, what first step feels smallest?" *(Motivational Interviewing)*
+- "If not now, when?" *(Stoic Time-Consciousness)*
+- "Why does this matter to me right now?" *(5-Why Root Cause)*
 
-### **Complex Life Systems Analysis**
-Your responses feed into sophisticated AI analysis that identifies patterns, leverage points, and system redesign opportunities.
+### **Smart Life Analysis**
+Your responses feed into smart AI analysis that spots patterns, finds the biggest opportunities for change, and suggests better approaches.
 
 ## Database Schema (Supabase)
 
@@ -117,7 +117,7 @@ leverage_points (id, user_id, intervention, potential_impact, implementation_sta
 
 -- AI analysis and insights
 system_analyses (id, user_id, analysis_type, insights, connections, recommendations, created_at)
-socratic_conversations (id, user_id, conversation_thread, depth_level, revelations, follow_ups)
+wisdom_conversations (id, user_id, conversation_thread, depth_level, revelations, follow_ups)
 architectural_designs (id, user_id, life_area, current_design, proposed_design, implementation_steps)
 ```
 
@@ -152,12 +152,12 @@ Required in `.env`:
 
 ### **Master AI Systems**
 
-**System 1: Socratic Questioner**
+**System 1: Scientific Inquiry Engine**
 ```
-Guide users through profound self-discovery using Socratic method.
-Analyze current life patterns and beliefs. Ask questions that reveal
-hidden assumptions and unlock new perspectives. Tailor depth to user's
-transformation phase and readiness level.
+Guide users through scientifically-proven psychological methods for self-discovery.
+Use CBT Socratic questioning, motivational interviewing, Stoic practices, 
+5-Why methodology, and narrative concrete questioning. Rotate through different
+scientific approaches based on user's phase and readiness level.
 ```
 
 **System 2: Life Architecture Mapper**
@@ -232,7 +232,7 @@ npx supabase gen types typescript --local
 1. ✅ Basic project setup
 2. ✅ Advanced database schema implementation
 3. ✅ Sophisticated AI prompt system architecture
-4. ✅ Socratic questioning engine foundation
+4. ✅ Wisdom questioning engine foundation
 5. ✅ Transformation phase tracking system
 
 ### **Phase 2: Core Systems (3-4 weeks)**

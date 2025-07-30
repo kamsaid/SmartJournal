@@ -3,7 +3,7 @@ import {
   DailyReflection,
   LifeSystem,
   LifeSystemType,
-  SocraticConversation,
+  WisdomConversation,
 } from '@/types/database';
 import { aiOrchestrator } from '@/services/openai';
 import { generateUUID } from '@/utils/uuid';

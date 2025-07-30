@@ -83,7 +83,7 @@ export const advancedOrchestrator = {
     const strategies: OrchestrationStrategy = {
       phase_1_2: [
         {
-          ai_system: 'socratic_questioner',
+          ai_system: 'wisdom_questioner',
           priority: 1,
           reasoning: 'Early phases need awareness-building questions',
           expected_outcomes: ['pattern_recognition', 'assumption_challenging'],
@@ -109,7 +109,7 @@ export const advancedOrchestrator = {
           expected_outcomes: ['system_mapping', 'interconnection_analysis'],
         },
         {
-          ai_system: 'socratic_questioner',
+          ai_system: 'wisdom_questioner',
           priority: 3,
           reasoning: 'Continue deepening understanding through questions',
           expected_outcomes: ['deeper_insights', 'perspective_shifts'],
@@ -242,8 +242,11 @@ async function executeSystemResponse(
   requestType: string
 ): Promise<AIResponse> {
   switch (aiSystem) {
-    case 'socratic_questioner':
-      return await aiOrchestrator.generateSocraticQuestion(context, userInput);
+    case 'wisdom_questioner':
+      return await aiOrchestrator.generateWisdomGuidedQuestion(context, userInput);
+    
+    case 'socratic_questioner': // Legacy backward compatibility
+      return await aiOrchestrator.generateWisdomGuidedQuestion(context, userInput);
     
     case 'life_architecture_mapper':
       return await aiOrchestrator.analyzeLifeSystems(context, 'interconnection_analysis' as AnalysisType);
@@ -261,7 +264,7 @@ async function executeSystemResponse(
       return await generateIntegrationResponse(context, userInput);
     
     default:
-      return await aiOrchestrator.generateSocraticQuestion(context, userInput);
+      return await aiOrchestrator.generateWisdomGuidedQuestion(context, userInput);
   }
 }
 

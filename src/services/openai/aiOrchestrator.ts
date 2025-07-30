@@ -38,16 +38,18 @@ export interface AIResponse {
     patterns_identified?: string[];
     leverage_points?: string[];
     system_connections?: string[];
+    wisdom_insights?: Record<string, any>;
+    breakthrough_detected?: boolean;
   };
 }
 
 export const aiOrchestrator = {
-  // Main Socratic questioning system
-  generateSocraticQuestion: async (
+  // Main wisdom-guided questioning system (renamed from generateSocraticQuestion)
+  generateWisdomGuidedQuestion: async (
     context: AIContext,
-    userResponse?: string
+    prompt: string
   ): Promise<AIResponse> => {
-    const systemPrompt = buildSystemPrompt('socratic_questioner', context);
+    const systemPrompt = buildSystemPrompt('wisdom_guide', context);
     
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
@@ -63,20 +65,16 @@ export const aiOrchestrator = {
       });
     }
 
-    // Add current user response if provided
-    if (userResponse) {
-      messages.push({ role: 'user', content: userResponse });
-    } else {
-      // Generate opening question based on phase
-      const phaseContext = `Generate an opening Socratic question for someone in ${getPhaseName(context.user.current_phase)}. Consider their current life patterns and transformation readiness.`;
-      messages.push({ role: 'user', content: phaseContext });
-    }
+    // Add current prompt
+    messages.push({ role: 'user', content: prompt });
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4-turbo-preview',
       messages,
-      max_tokens: 300,
+      max_tokens: 250,
       temperature: 0.8,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1,
     });
 
     const content = completion.choices[0]?.message?.content || '';
@@ -84,19 +82,105 @@ export const aiOrchestrator = {
     return {
       content,
       metadata: {
-        ai_system_used: 'socratic_questioner',
+        ai_system_used: 'wisdom_guide',
         confidence_level: 0.85,
         suggested_follow_ups: await generateFollowUpQuestions(content, context),
       },
     };
   },
 
-  // Life systems analysis and mapping
+  // Legacy method for backward compatibility
+  generateSocraticQuestion: async (
+    context: AIContext,
+    userResponse?: string
+  ): Promise<AIResponse> => {
+    // Redirect to wisdom-guided approach with appropriate prompt
+    const prompt = userResponse || 
+      `Generate an opening wisdom-guided question for someone in ${getPhaseName(context.user.current_phase)}. Consider their current life patterns and transformation readiness.`;
+    
+    return aiOrchestrator.generateWisdomGuidedQuestion(context, prompt);
+  },
+
+  // New method for analyzing reflections with wisdom principles
+  analyzeReflection: async (
+    context: AIContext,
+    params: {
+      response: string;
+      questionContext: any;
+      evaluationCriteria: Record<string, string>;
+    }
+  ): Promise<AIResponse> => {
+    const systemPrompt = `${MASTER_SYSTEM_PROMPT}
+
+Analyze this user reflection through the lens of wisdom-guided transformation.
+Evaluate based on these criteria:
+${Object.entries(params.evaluationCriteria)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')}
+
+Look for:
+1. Depth of self-awareness and honest reflection
+2. Recognition of personal patterns and themes
+3. Accountability and ownership of their journey
+4. Readiness for transformation and growth
+5. Integration of previous insights
+6. Balance between self-compassion and challenge
+
+Identify any breakthrough moments, emerging patterns, or system connections.`;
+
+    const userPrompt = `Question asked: "${params.questionContext.question}"
+Category: ${params.questionContext.category}
+Depth level: ${params.questionContext.depth_level}
+
+User's reflection:
+"${params.response}"
+
+Provide analysis in JSON format with:
+- patterns_identified: array of recognized patterns
+- system_connections: array of connections across life areas
+- wisdom_insights: object with scores for each evaluation criteria (0-1)
+- breakthrough_detected: boolean
+- key_insights: array of main insights from the response
+- recommended_follow_up: suggested direction for continued exploration`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4-turbo-preview',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 600,
+        response_format: { type: "json_object" }
+      });
+
+      const analysisResult = JSON.parse(response.choices[0].message.content || '{}');
+
+      return {
+        content: JSON.stringify(analysisResult),
+        metadata: {
+          ai_system_used: 'wisdom_reflection_analyzer',
+          confidence_level: 0.88,
+          suggested_follow_ups: [],
+          patterns_identified: analysisResult.patterns_identified || [],
+          system_connections: analysisResult.system_connections || [],
+          wisdom_insights: analysisResult.wisdom_insights || {},
+          breakthrough_detected: analysisResult.breakthrough_detected || false,
+        }
+      };
+    } catch (error) {
+      console.error('Error analyzing reflection:', error);
+      throw error;
+    }
+  },
+
+  // Life systems analysis and mapping with wisdom focus
   analyzeLifeSystems: async (
     context: AIContext,
     analysisType: AnalysisType
   ): Promise<AIResponse> => {
-    const systemPrompt = buildSystemPrompt('life_architecture_mapper', context);
+    const systemPrompt = buildSystemPrompt('life_wisdom_architect', context);
     const analysisPrompt = ANALYSIS_PROMPTS[analysisType];
 
     const userDataSummary = buildUserDataSummary(context);
@@ -105,7 +189,7 @@ export const aiOrchestrator = {
       { role: 'system', content: `${systemPrompt}\n\n${analysisPrompt}` },
       {
         role: 'user',
-        content: `Analyze this user's life systems:\n\n${userDataSummary}`,
+        content: `Analyze this user's life systems through wisdom principles:\n\n${userDataSummary}`,
       },
     ];
 
@@ -124,7 +208,7 @@ export const aiOrchestrator = {
     return {
       content,
       metadata: {
-        ai_system_used: 'life_architecture_mapper',
+        ai_system_used: 'life_wisdom_architect',
         confidence_level: 0.9,
         suggested_follow_ups: [],
         ...insights,
@@ -132,16 +216,16 @@ export const aiOrchestrator = {
     };
   },
 
-  // Root cause and leverage analysis
+  // Root cause and leverage analysis with wisdom perspective
   identifyLeveragePoints: async (context: AIContext): Promise<AIResponse> => {
-    const systemPrompt = buildSystemPrompt('leverage_analyzer', context);
+    const systemPrompt = buildSystemPrompt('wisdom_leverage_analyzer', context);
     const userDataSummary = buildUserDataSummary(context);
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `Identify the highest-leverage intervention points for this user:\n\n${userDataSummary}\n\nFocus on changes that would solve multiple problems simultaneously and create cascading positive effects.`,
+        content: `Identify the highest-wisdom intervention points for this user:\n\n${userDataSummary}\n\nFocus on changes that would create cascading positive effects through wisdom application and create sustainable transformation.`,
       },
     ];
 
@@ -158,7 +242,7 @@ export const aiOrchestrator = {
     return {
       content,
       metadata: {
-        ai_system_used: 'leverage_analyzer',
+        ai_system_used: 'wisdom_leverage_analyzer',
         confidence_level: 0.88,
         suggested_follow_ups: [],
         leverage_points: leveragePoints,
@@ -166,16 +250,16 @@ export const aiOrchestrator = {
     };
   },
 
-  // Life design guidance and architecture
+  // Life design guidance through wisdom architecture
   generateLifeDesign: async (
     context: AIContext,
     lifeArea: LifeSystemType,
     specificChallenge?: string
   ): Promise<AIResponse> => {
-    const systemPrompt = buildSystemPrompt('life_design_guide', context);
+    const systemPrompt = buildSystemPrompt('wisdom_life_designer', context);
     const lifeSystemPrompt = LIFE_SYSTEM_PROMPTS[lifeArea];
 
-    const challenge = specificChallenge || `Design a comprehensive system for their ${lifeArea} life area`;
+    const challenge = specificChallenge || `Design a wisdom-based system for their ${lifeArea} life area`;
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: `${systemPrompt}\n\n${lifeSystemPrompt}` },
@@ -197,23 +281,23 @@ export const aiOrchestrator = {
     return {
       content,
       metadata: {
-        ai_system_used: 'life_design_guide',
+        ai_system_used: 'wisdom_life_designer',
         confidence_level: 0.87,
         suggested_follow_ups: [
-          'How would you implement this system in your current environment?',
+          'How would you implement this wisdom system in your current environment?',
           'What would be the first small step to test this approach?',
-          'What obstacles might prevent this from working, and how would you design around them?',
+          'What obstacles might prevent this from working, and how would you design around them with wisdom?',
         ],
       },
     };
   },
 
-  // Pattern recognition and analysis
+  // Pattern recognition through wisdom lens
   recognizePatterns: async (
     context: AIContext,
     focusArea?: string
   ): Promise<AIResponse> => {
-    const systemPrompt = buildSystemPrompt('pattern_recognizer', context);
+    const systemPrompt = buildSystemPrompt('wisdom_pattern_recognizer', context);
     const userDataSummary = buildUserDataSummary(context);
 
     const focus = focusArea || 'all life areas';
@@ -222,7 +306,7 @@ export const aiOrchestrator = {
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `Identify hidden patterns in this user's responses and life systems, focusing on ${focus}:\n\n${userDataSummary}`,
+        content: `Identify wisdom patterns and cycles in this user's responses and life systems, focusing on ${focus}:\n\n${userDataSummary}`,
       },
     ];
 
@@ -239,7 +323,7 @@ export const aiOrchestrator = {
     return {
       content,
       metadata: {
-        ai_system_used: 'pattern_recognizer',
+        ai_system_used: 'wisdom_pattern_recognizer',
         confidence_level: 0.82,
         suggested_follow_ups: [],
         patterns_identified: patterns,
@@ -248,7 +332,7 @@ export const aiOrchestrator = {
   },
 };
 
-// Helper functions
+// Helper functions - updated with wisdom terminology
 function buildSystemPrompt(aiSystem: string, context: AIContext): string {
   const phasePrompt = PHASE_PROMPTS[context.user.current_phase];
   const userContext = buildUserContext(context);
@@ -261,14 +345,21 @@ ${phasePrompt}
 ${userContext}
 
 ## Instructions
-You are currently operating as the ${aiSystem.replace('_', ' ').toUpperCase()} system. Focus on this specific role while maintaining awareness of the user's complete transformation journey.`;
+You are currently operating as the ${aiSystem.replace('_', ' ').toUpperCase()} system. Focus on this specific role while maintaining awareness of the user's complete wisdom transformation journey.
+
+Guide them through:
+- Deep contemplation and self-discovery
+- Personal accountability with compassion
+- Excellence pursuit with balance
+- Gratitude for hidden blessings
+- Patient persistence in growth`;
 }
 
 function buildUserContext(context: AIContext): string {
   const { user, recentReflections, lifeSystems, patterns } = context;
 
   let userContext = `- Transformation Phase: ${user.current_phase} (${getPhaseName(user.current_phase)})
-- Days in transformation: ${Math.floor((Date.now() - new Date(user.transformation_start_date).getTime()) / (1000 * 60 * 60 * 24))}`;
+- Days in wisdom journey: ${Math.floor((Date.now() - new Date(user.transformation_start_date).getTime()) / (1000 * 60 * 60 * 24))}`;
 
   if (recentReflections?.length) {
     userContext += `\n- Recent reflection depth: ${recentReflections[0].depth_level}/10`;
@@ -283,7 +374,7 @@ function buildUserContext(context: AIContext): string {
   }
 
   if (patterns?.length) {
-    userContext += `\n- Identified patterns: ${patterns.length}`;
+    userContext += `\n- Wisdom patterns identified: ${patterns.length}`;
   }
 
   return userContext;
@@ -294,27 +385,27 @@ function buildUserDataSummary(context: AIContext): string {
 
   let summary = `User Profile:
 - Current Phase: ${getPhaseName(user.current_phase)}
-- Transformation Start: ${user.transformation_start_date}`;
+- Wisdom Journey Start: ${user.transformation_start_date}`;
 
   if (recentReflections?.length) {
-    summary += `\n\nRecent Reflections:`;
+    summary += `\n\nRecent Wisdom Reflections:`;
     recentReflections.slice(0, 3).forEach(reflection => {
       summary += `\n- ${reflection.date}: Depth ${reflection.depth_level}/10`;
       if (reflection.responses.length > 0) {
-        summary += `\n  Key response: "${reflection.responses[0].response.substring(0, 100)}..."`;
+        summary += `\n  Key insight: "${reflection.responses[0].response.substring(0, 100)}..."`;
       }
     });
   }
 
   if (lifeSystems?.length) {
-    summary += `\n\nLife Systems Status:`;
+    summary += `\n\nLife Systems Wisdom Status:`;
     lifeSystems.forEach(system => {
       summary += `\n- ${system.system_type}: ${system.current_state.satisfaction_level}/10`;
     });
   }
 
   if (patterns?.length) {
-    summary += `\n\nIdentified Patterns:`;
+    summary += `\n\nWisdom Patterns Identified:`;
     patterns.slice(0, 3).forEach(pattern => {
       summary += `\n- ${pattern.pattern_type}: ${pattern.description}`;
     });
@@ -324,28 +415,36 @@ function buildUserDataSummary(context: AIContext): string {
 }
 
 function getPhaseName(phase: TransformationPhase): string {
-  const phaseNames = {
-    1: 'Recognition - The Two Types of People',
-    2: 'Understanding - The Leverage Principle',
-    3: 'Realization - The Meta-Life Loop',
-    4: 'Transformation - Infinite Leverage',
-    5: 'Vision - The Life You\'re Capable Of',
-    6: 'Reality - The Architected Life',
-    7: 'Integration - The Complete Transformation',
+  const phaseNames: Record<TransformationPhase, string> = {
+    1: 'Awareness - Building Consciousness',
+    2: 'Understanding - Developing Deep Insight', 
+    3: 'Transformation - Creating Positive Change',
+    4: 'Integration - Embodying New Ways',
+    5: 'Mastery - Living Wisdom Daily',
+    6: 'Flow - Effortless Integration',
+    7: 'Legacy - Wisdom in Service',
   };
-  return phaseNames[phase];
+  return phaseNames[phase] || 'Wisdom Journey';
 }
 
-// Advanced analysis implementations
+// Helper function to determine phase stage for prompts
+function getPhaseStage(phase: number): string {
+  if (phase <= 2) return 'awareness';
+  if (phase <= 4) return 'understanding';
+  if (phase <= 6) return 'transformation';
+  return 'integration';
+}
+
+// Advanced analysis implementations - updated with wisdom focus
 async function generateFollowUpQuestions(content: string, context: AIContext): Promise<string[]> {
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     {
       role: 'system',
-      content: 'Generate 3 sophisticated follow-up questions that deepen the Socratic dialogue. Focus on assumptions, connections, and alternative perspectives.',
+      content: 'Generate 3 sophisticated wisdom-guided follow-up questions that deepen reflection. Focus on uncovering assumptions, making connections, and revealing alternative perspectives through compassionate inquiry.',
     },
     {
       role: 'user',
-      content: `Based on this question/response: "${content}" and user phase ${context.user.current_phase}, generate 3 follow-up questions.`,
+      content: `Based on this wisdom question/response: "${content}" and user phase ${context.user.current_phase}, generate 3 follow-up questions that guide deeper self-discovery.`,
     },
   ];
 
@@ -362,22 +461,22 @@ async function generateFollowUpQuestions(content: string, context: AIContext): P
   } catch (error) {
     console.error('Error generating follow-up questions:', error);
     return [
-      'What assumptions might you be making here?',
-      'How does this connect to other areas of your life?',
-      'What would change if you approached this differently?',
+      'What deeper truth might be hidden beneath this insight?',
+      'How does this wisdom connect to other areas of your life?',
+      'What would change if you fully embodied this understanding?',
     ];
   }
 }
 
 async function extractStructuredInsights(content: string, analysisType: AnalysisType): Promise<any> {
-  const extractionPrompt = `Extract structured insights from this analysis response:
+  const extractionPrompt = `Extract structured wisdom insights from this analysis response:
 
 "${content}"
 
 Return in this format:
-PATTERNS: [list patterns identified]
-LEVERAGE: [list leverage points]
-CONNECTIONS: [list system connections]`;
+PATTERNS: [list wisdom patterns identified]
+LEVERAGE: [list high-impact leverage points]
+CONNECTIONS: [list system connections and relationships]`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -385,7 +484,7 @@ CONNECTIONS: [list system connections]`;
       messages: [
         {
           role: 'system',
-          content: 'Extract structured insights from life systems analysis. Be concise and specific.',
+          content: 'Extract structured wisdom insights from life systems analysis. Be concise and focus on transformational insights.',
         },
         { role: 'user', content: extractionPrompt },
       ],
@@ -422,11 +521,11 @@ async function extractLeveragePoints(content: string): Promise<string[]> {
       messages: [
         {
           role: 'system',
-          content: 'Extract specific leverage points from this analysis. Return as a simple list, one per line.',
+          content: 'Extract specific wisdom-based leverage points from this analysis. Return as a simple list, one per line.',
         },
         {
           role: 'user',
-          content: `Extract the key leverage points from: "${content}"`,
+          content: `Extract the key wisdom leverage points from: "${content}"`,
         },
       ],
       max_tokens: 200,
@@ -451,11 +550,11 @@ async function extractPatterns(content: string): Promise<string[]> {
       messages: [
         {
           role: 'system',
-          content: 'Extract behavioral, cognitive, and life patterns from this analysis. Return as a simple list, one per line.',
+          content: 'Extract wisdom patterns, behavioral cycles, and transformational themes from this analysis. Return as a simple list, one per line.',
         },
         {
           role: 'user',
-          content: `Extract the key patterns from: "${content}"`,
+          content: `Extract the key wisdom patterns from: "${content}"`,
         },
       ],
       max_tokens: 200,

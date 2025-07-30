@@ -9,22 +9,23 @@ export default function OnboardingScreen({ navigation }: OnboardingScreenProps) 
   const [currentStep, setCurrentStep] = useState(0);
 
   const onboardingSteps = [
+    // Updated onboarding steps for a more compelling, actionable, and concise onboarding experience.
     {
-      title: 'Welcome to Your Transformation',
-      content: 'You\'re about to embark on the most important journey of your life—developing systems thinking to architect the reality you want rather than merely reacting to circumstances.',
+      title: "Welcome to Your Transformation",
+      content: "You’re not here to fill time—you’re here to shape it. By tapping ‘Continue,’ you trade autopilot for authorship and start compounding freedom, focus, and purpose."
     },
     {
-      title: 'The Seven-Phase Journey',
-      content: 'Your transformation follows seven phases: Recognition, Understanding, Realization, Transformation, Vision, Reality, and Integration. Each phase builds upon the last.',
+      title: "The Seven-Phase Journey",
+      content: "Seven deliberate phases carry you from first insight to everyday mastery: Recognition, Understanding, Realization, Transformation, Vision, Reality, Integration. One step at a time—no overwhelm, just momentum."
     },
     {
-      title: 'Daily Socratic Practice',
-      content: 'Each day, our AI will guide you through profound questions designed to reveal patterns, challenge assumptions, and unlock new ways of thinking.',
+      title: "Daily Check-ins",
+      content: "Expect two lightning‑fast reflections each day. Five minutes of micro‑journaling, anchored to an existing routine, is enough to shift habits and slash stress."
     },
     {
-      title: 'Ready to Begin?',
-      content: 'You\'ll start in Phase 1: Recognition, where you\'ll discover the fundamental difference between those who react to life and those who architect it.',
-    },
+      title: "Ready to Begin?",
+      content: "Phase 1 starts now. Spot one area on autopilot, ask ‘Why?’ five times, then choose the smallest action to rewrite that script. Your future self is already cheering."
+    }
   ];
 
   const handleNext = () => {
