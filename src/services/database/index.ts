@@ -1,21 +1,28 @@
 // Database Services Barrel Export
 // Clean interface for all database-related services
 
-// Core Database Services
-export { 
-  default as DatabaseService,
-  databaseService,
-  UserService,
-  userService,
-  ReflectionService,
-  reflectionService,
+// Import BaseSupabaseRepository only once
+import BaseSupabaseRepository from './SupabaseRepository';
+
+// Import repository classes
+import { UserRepository } from './repositories/UserRepository';
+import { DailyReflectionRepository } from './repositories/DailyReflectionRepository';
+import { PatternRepository } from './repositories/PatternRepository';
+
+// Import the required services and classes
+import { 
+  DatabaseService, 
+  UserService, 
+  ReflectionService, 
   PatternService,
-  patternService,
+  databaseService,
+  userService,
+  reflectionService,
+  patternService
 } from './DatabaseService';
 
 // Repository Pattern
 export {
-  default as BaseSupabaseRepository,
   BaseSupabaseRepository,
   UserRepository,
   DailyReflectionRepository,
@@ -43,7 +50,7 @@ export type { ServiceResult } from '../base/BaseService';
 // Database Utilities
 export const DatabaseUtils = {
   // Create a new repository for any table
-  createRepository: <T>(tableName: string) => createRepository<T>(tableName),
+  createRepository: <T>(tableName: string) => new BaseSupabaseRepository<T, any>(tableName),
   
   // Health check all database services
   healthCheck: async () => {
@@ -94,7 +101,7 @@ export const RepositoryFactory = {
   createUserRepository: () => new UserRepository(),
   createReflectionRepository: () => new DailyReflectionRepository(),
   createPatternRepository: () => new PatternRepository(),
-  createCustomRepository: <T>(tableName: string) => createRepository<T>(tableName),
+  createCustomRepository: <T>(tableName: string) => new BaseSupabaseRepository<T, any>(tableName),
 };
 
 // Database Migration Utilities (for future use)
@@ -105,7 +112,7 @@ export const MigrationUtils = {
     
     for (const tableName of tableNames) {
       try {
-        const repo = createRepository(tableName);
+        const repo = new BaseSupabaseRepository(tableName, tableName);
         await repo.initialize();
         results[tableName] = true;
       } catch (error) {
@@ -152,6 +159,11 @@ export const ConnectionPool = {
 };
 
 // Export commonly used repository instances for convenience
+// Create repository instances
+const userRepository = new UserRepository();
+const dailyReflectionRepository = new DailyReflectionRepository();
+const patternRepository = new PatternRepository();
+
 export const repositories = {
   user: userRepository,
   reflection: dailyReflectionRepository,

@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withDelay,
+  withSequence,
+  interpolate,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CheckInType } from '@/types/database';
+import { AnimatedCard, LoadingAnimation } from '@/components/animated';
+import { theme, SPRING_CONFIGS, createStaggerAnimation } from '@/design-system';
 
 interface CheckInOption {
   type: CheckInType;
@@ -34,29 +44,44 @@ export default function CheckInTypeSelector({ onTypeSelect }: CheckInTypeSelecto
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime] = useState(new Date());
 
-  useEffect(() => {
-    loadCheckInStatus();
-  }, []);
+  // Animation values - create at top level to avoid hook violations
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(-20);
+  const footerOpacity = useSharedValue(0);
+  
+  // Fixed-size animation arrays for 3 check-in options (morning, nightly, daily)
+  // Create at top level to maintain consistent hook order
+  const cardAnimations = [
+    useSharedValue(0), // morning opacity
+    useSharedValue(0), // nightly opacity  
+    useSharedValue(0), // daily opacity
+  ];
+  
+  const cardTranslations = [
+    useSharedValue(30), // morning translateY
+    useSharedValue(30), // nightly translateY
+    useSharedValue(30), // daily translateY
+  ];
 
-  const loadCheckInStatus = async () => {
-    setIsLoading(true);
-    try {
-      // TODO: Implement service to check which check-ins are completed today
-      // For now, using mock data
-      const today = new Date().toISOString().split('T')[0];
-      
-      setCheckInStatus({
-        morning: false, // Would check if morning check-in exists for today
-        nightly: false, // Would check if nightly check-in exists for today
-        daily: false,   // Would check if daily check-in exists for today
-      });
-    } catch (error) {
-      console.error('Error loading check-in status:', error);
-    }
-    setIsLoading(false);
-  };
+  // Create animated styles at top level for all 3 cards
+  // This ensures hooks are always called in the same order
+  const cardAnimatedStyles = [
+    useAnimatedStyle(() => ({
+      opacity: cardAnimations[0].value,
+      transform: [{ translateY: cardTranslations[0].value }],
+    })),
+    useAnimatedStyle(() => ({
+      opacity: cardAnimations[1].value,
+      transform: [{ translateY: cardTranslations[1].value }],
+    })),
+    useAnimatedStyle(() => ({
+      opacity: cardAnimations[2].value,
+      transform: [{ translateY: cardTranslations[2].value }],
+    })),
+  ];
 
-  const checkInOptions: CheckInOption[] = [
+  // Get check-in options - memoized based on checkInStatus only
+  const checkInOptions: CheckInOption[] = useMemo(() => [
     {
       type: 'morning',
       title: 'Morning Check-in',
@@ -105,7 +130,55 @@ export default function CheckInTypeSelector({ onTypeSelect }: CheckInTypeSelecto
       available: true,
       completedToday: checkInStatus.daily,
     },
-  ];
+  ], [checkInStatus]);
+  
+  // Initialize entrance animations
+  useEffect(() => {
+    if (!isLoading) {
+      // Header animation
+      headerOpacity.value = withDelay(200, withTiming(1, { duration: 600 }));
+      headerTranslateY.value = withDelay(200, withSpring(0, SPRING_CONFIGS.gentle));
+      
+      // Staggered card animations - safely iterate through fixed arrays
+      cardAnimations.forEach((anim, index) => {
+        if (anim) {
+          anim.value = withDelay(600 + (index * 150), withTiming(1, { duration: 500 }));
+        }
+      });
+      
+      cardTranslations.forEach((trans, index) => {
+        if (trans) {
+          trans.value = withDelay(600 + (index * 150), withSpring(0, SPRING_CONFIGS.bouncy));
+        }
+      });
+      
+      // Footer animation
+      footerOpacity.value = withDelay(1200, withTiming(1, { duration: 400 }));
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    loadCheckInStatus();
+  }, []);
+
+  const loadCheckInStatus = async () => {
+    setIsLoading(true);
+    try {
+      // TODO: Implement service to check which check-ins are completed today
+      // For now, using mock data
+      const today = new Date().toISOString().split('T')[0];
+      
+      setCheckInStatus({
+        morning: false, // Would check if morning check-in exists for today
+        nightly: false, // Would check if nightly check-in exists for today
+        daily: false,   // Would check if daily check-in exists for today
+      });
+    } catch (error) {
+      console.error('Error loading check-in status:', error);
+    }
+    setIsLoading(false);
+  };
+
 
   const getTimeBasedRecommendation = (): CheckInType => {
     const hour = currentTime.getHours();
@@ -123,98 +196,172 @@ export default function CheckInTypeSelector({ onTypeSelect }: CheckInTypeSelecto
 
   const recommendedType = getTimeBasedRecommendation();
 
-  const renderCheckInOption = (option: CheckInOption) => {
+  // Updated renderCheckInOption to accept pre-created animated style
+  const renderCheckInOption = (option: CheckInOption, index: number, animatedStyle: any) => {
     const isRecommended = option.type === recommendedType;
     const isCompleted = option.completedToday;
-
+    
     return (
-      <TouchableOpacity
-        key={option.type}
-        style={[
-          styles.optionCard,
-          isRecommended && styles.recommendedCard,
-          isCompleted && styles.completedCard,
-        ]}
-        onPress={() => onTypeSelect(option.type)}
-        disabled={isCompleted}
-      >
-        {isRecommended && (
-          <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>Recommended Now</Text>
-          </View>
-        )}
-        
-        {isCompleted && (
-          <View style={styles.completedBadge}>
-            <Text style={styles.completedText}>✓ Completed Today</Text>
-          </View>
-        )}
+      <Animated.View key={option.type} style={animatedStyle}>
+        <AnimatedCard
+          variant={isRecommended ? 'cosmic' : isCompleted ? 'default' : 'glass'}
+          size="lg"
+          pressable={!isCompleted}
+          onPress={() => onTypeSelect(option.type)}
+          glowEffect={isRecommended}
+          breathingAnimation={isRecommended}
+          hapticFeedback={true}
+          style={isCompleted ? { ...styles.optionCard, ...styles.completedCard } : styles.optionCard}
+        >
+          {/* Badge */}
+          {isRecommended && (
+            <View style={styles.recommendedBadge}>
+              <LinearGradient
+                colors={theme.colors.gradients.cosmic}
+                style={styles.badgeGradient}
+              >
+                <Text style={styles.badgeText}>✨ Recommended Now</Text>
+              </LinearGradient>
+            </View>
+          )}
+          
+          {isCompleted && (
+            <View style={styles.completedBadge}>
+              <Text style={styles.badgeText}>✅ Completed Today</Text>
+            </View>
+          )}
 
-        <View style={styles.optionHeader}>
-          <Text style={styles.optionEmoji}>{option.emoji}</Text>
-          <View style={styles.optionTitleContainer}>
-            <Text style={[styles.optionTitle, isCompleted && styles.completedTitle]}>
-              {option.title}
+          {/* Header */}
+          <View style={styles.optionHeader}>
+            <Text style={[styles.optionEmoji, isCompleted && styles.completedEmoji]}>
+              {option.emoji}
             </Text>
-            <Text style={[styles.optionDuration, isCompleted && styles.completedSubtext]}>
-              {option.duration}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={[styles.optionDescription, isCompleted && styles.completedSubtext]}>
-          {option.description}
-        </Text>
-
-        <View style={styles.questionsList}>
-          {option.questions.map((question, index) => (
-            <View key={index} style={styles.questionItem}>
-              <Text style={[styles.questionBullet, isCompleted && styles.completedSubtext]}>•</Text>
-              <Text style={[styles.questionText, isCompleted && styles.completedSubtext]}>
-                {question}
+            <View style={styles.optionTitleContainer}>
+              <Text style={[
+                styles.optionTitle, 
+                isCompleted && styles.completedTitle,
+                isRecommended && styles.recommendedTitle
+              ]}>
+                {option.title}
+              </Text>
+              <Text style={[
+                styles.optionDuration, 
+                isCompleted && styles.completedSubtext
+              ]}>
+                {option.duration}
               </Text>
             </View>
-          ))}
-        </View>
-
-        {!isCompleted && (
-          <View style={styles.startButton}>
-            <Text style={styles.startButtonText}>
-              {isRecommended ? 'Start Recommended' : 'Start Check-in'}
-            </Text>
           </View>
-        )}
-      </TouchableOpacity>
+
+          {/* Description */}
+          <Text style={[
+            styles.optionDescription, 
+            isCompleted && styles.completedSubtext
+          ]}>
+            {option.description}
+          </Text>
+
+          {/* Questions List */}
+          <View style={styles.questionsList}>
+            {option.questions.map((question, qIndex) => (
+              <View key={qIndex} style={styles.questionItem}>
+                <Text style={[
+                  styles.questionBullet, 
+                  isCompleted && styles.completedSubtext,
+                  isRecommended && styles.recommendedBullet
+                ]}>
+                  •
+                </Text>
+                <Text style={[
+                  styles.questionText, 
+                  isCompleted && styles.completedSubtext
+                ]}>
+                  {question}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Start Button */}
+          {!isCompleted && (
+            <View style={styles.startButtonContainer}>
+              {isRecommended ? (
+                <LinearGradient
+                  colors={theme.colors.gradients.cosmic}
+                  style={styles.startButton}
+                >
+                  <Text style={styles.startButtonText}>
+                    🚀 Start Recommended
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.startButton, styles.regularStartButton]}>
+                  <Text style={styles.startButtonText}>
+                    Start Check-in
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </AnimatedCard>
+      </Animated.View>
     );
   };
+
+  // Animated styles for header and footer
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
+  
+  const footerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: footerOpacity.value,
+  }));
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading your check-in options...</Text>
+        <LoadingAnimation
+          variant="cosmic"
+          size="lg"
+          text="Loading your check-in options..."
+        />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Animated Header */}
+      <Animated.View style={[styles.header, headerAnimatedStyle]}>
         <Text style={styles.title}>Choose Your Check-in</Text>
         <Text style={styles.subtitle}>
           Different types of check-ins for different moments in your day
         </Text>
-      </View>
+      </Animated.View>
 
+      {/* Animated Options */}
       <View style={styles.optionsContainer}>
-        {checkInOptions.map(renderCheckInOption)}
+        {checkInOptions && checkInOptions.length > 0 && 
+          checkInOptions.map((option, index) => 
+            // Pass the pre-created animated style to avoid hook order issues
+            renderCheckInOption(option, index, cardAnimatedStyles[index])
+          )
+        }
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          💡 You can complete multiple check-ins throughout the day for deeper insights
-        </Text>
-      </View>
+      {/* Animated Footer */}
+      <Animated.View style={[styles.footer, footerAnimatedStyle]}>
+        <AnimatedCard variant="glass" size="sm" style={styles.footerCard}>
+          <Text style={styles.footerText}>
+            💡 You can complete multiple check-ins throughout the day for deeper insights
+          </Text>
+        </AnimatedCard>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -222,165 +369,163 @@ export default function CheckInTypeSelector({ onTypeSelect }: CheckInTypeSelecto
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: theme.colors.dark.bg,
   },
   scrollContent: {
-    padding: 20,
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing['6xl'],
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#8b5cf6',
-    textAlign: 'center',
+    backgroundColor: theme.colors.dark.bg,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: theme.spacing['4xl'],
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSizes['4xl'],
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.dark.text.primary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#8b5cf6',
-    lineHeight: 22,
+    fontSize: theme.typography.fontSizes.lg,
+    color: theme.colors.primary[400],
+    lineHeight: theme.typography.lineHeights.relaxed * theme.typography.fontSizes.lg,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.md,
   },
   optionsContainer: {
-    gap: 20,
+    gap: theme.spacing.xl,
   },
   optionCard: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: 'transparent',
     position: 'relative',
   },
-  recommendedCard: {
-    borderColor: '#8b5cf6',
-    backgroundColor: '#1e1b2e',
-  },
   completedCard: {
-    backgroundColor: '#0f1419',
-    opacity: 0.7,
+    opacity: 0.6,
   },
   recommendedBadge: {
     position: 'absolute',
-    top: -8,
-    right: 16,
-    backgroundColor: '#8b5cf6',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    zIndex: 1,
-  },
-  recommendedText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
+    top: -theme.spacing.sm,
+    right: theme.spacing.lg,
+    zIndex: 10,
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
   },
   completedBadge: {
     position: 'absolute',
-    top: -8,
-    right: 16,
-    backgroundColor: '#10b981',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    zIndex: 1,
+    top: -theme.spacing.sm,
+    right: theme.spacing.lg,
+    backgroundColor: theme.colors.success,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.lg,
+    zIndex: 10,
   },
-  completedText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
+  badgeGradient: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+  },
+  badgeText: {
+    color: theme.colors.dark.text.primary,
+    fontSize: theme.typography.fontSizes.xs,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   optionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   optionEmoji: {
-    fontSize: 32,
-    marginRight: 16,
+    fontSize: 36,
+    marginRight: theme.spacing.lg,
+  },
+  completedEmoji: {
+    opacity: 0.6,
   },
   optionTitleContainer: {
     flex: 1,
   },
   optionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 2,
+    fontSize: theme.typography.fontSizes['2xl'],
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.dark.text.primary,
+    marginBottom: theme.spacing.xs,
+  },
+  recommendedTitle: {
+    color: theme.colors.primary[300],
   },
   completedTitle: {
-    color: '#6b7280',
+    color: theme.colors.dark.text.tertiary,
   },
   optionDuration: {
-    fontSize: 14,
-    color: '#8b5cf6',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.primary[400],
+    fontWeight: theme.typography.fontWeights.medium,
   },
   optionDescription: {
-    fontSize: 14,
-    color: '#d1d5db',
-    lineHeight: 20,
-    marginBottom: 16,
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.dark.text.secondary,
+    lineHeight: theme.typography.lineHeights.relaxed * theme.typography.fontSizes.md,
+    marginBottom: theme.spacing.lg,
   },
   completedSubtext: {
-    color: '#6b7280',
+    color: theme.colors.dark.text.tertiary,
   },
   questionsList: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   questionItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    marginBottom: theme.spacing.sm,
   },
   questionBullet: {
-    color: '#8b5cf6',
-    fontSize: 16,
-    marginRight: 8,
+    color: theme.colors.primary[400],
+    fontSize: theme.typography.fontSizes.lg,
+    marginRight: theme.spacing.sm,
     marginTop: 2,
+  },
+  recommendedBullet: {
+    color: theme.colors.primary[300],
   },
   questionText: {
     flex: 1,
-    fontSize: 13,
-    color: '#d1d5db',
-    lineHeight: 18,
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.dark.text.secondary,
+    lineHeight: theme.typography.lineHeights.normal * theme.typography.fontSizes.sm,
+  },
+  startButtonContainer: {
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
   },
   startButton: {
-    backgroundColor: '#8b5cf6',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
     alignItems: 'center',
+    borderRadius: theme.borderRadius.md,
+  },
+  regularStartButton: {
+    backgroundColor: theme.colors.primary[500],
   },
   startButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: theme.colors.dark.text.primary,
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   footer: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#8b5cf6',
+    marginTop: theme.spacing['4xl'],
+  },
+  footerCard: {
+    marginVertical: 0,
   },
   footerText: {
-    fontSize: 14,
-    color: '#d1d5db',
-    lineHeight: 20,
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.dark.text.secondary,
+    lineHeight: theme.typography.lineHeights.relaxed * theme.typography.fontSizes.sm,
     textAlign: 'center',
   },
 });

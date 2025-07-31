@@ -37,7 +37,10 @@ import {
 } from '@/types/database';
 
 // Main Database Service
-export class DatabaseService extends BaseService implements IDatabaseService {
+class DatabaseService extends BaseService implements IDatabaseService {
+  name = 'DatabaseService' as const;
+  version = '1.0.0' as const;
+  
   private repositories: Map<string, BaseSupabaseRepository<any, any>> = new Map();
 
   constructor() {
@@ -165,7 +168,10 @@ export class DatabaseService extends BaseService implements IDatabaseService {
 }
 
 // User Service Implementation
-export class UserService extends BaseService implements IUserService {
+class UserService extends BaseService implements IUserService {
+  name = 'UserService' as const;
+  version = '1.0.0' as const;
+  
   constructor(private databaseService: DatabaseService) {
     super({
       name: 'user_service',
@@ -234,7 +240,10 @@ export class UserService extends BaseService implements IUserService {
 }
 
 // Reflection Service Implementation
-export class ReflectionService extends BaseService implements IReflectionService {
+class ReflectionService extends BaseService implements IReflectionService {
+  name = 'ReflectionService' as const;
+  version = '1.0.0' as const;
+  
   constructor(private databaseService: DatabaseService) {
     super({
       name: 'reflection_service',
@@ -294,7 +303,10 @@ export class ReflectionService extends BaseService implements IReflectionService
 }
 
 // Pattern Service Implementation
-export class PatternService extends BaseService implements IPatternService {
+class PatternService extends BaseService implements IPatternService {
+  name = 'PatternService' as const;
+  version = '1.0.0' as const;
+  
   constructor(private databaseService: DatabaseService) {
     super({
       name: 'pattern_service',

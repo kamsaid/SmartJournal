@@ -28,6 +28,14 @@ export const morningCheckInService = {
     try {
       const date = new Date().toISOString().split('T')[0];
       
+      // First, check if a morning check-in already exists for today
+      const existingCheckIn = await morningCheckInService.getMorningCheckIn(userId, date);
+      
+      if (existingCheckIn) {
+        // If a check-in already exists, throw a user-friendly error
+        throw new Error('You have already completed your morning check-in for today. Each day only allows one morning check-in.');
+      }
+      
       // Create morning check-in record with validated duration (ensure positive and within reasonable bounds)
       const validatedDuration = Math.max(1, Math.min(Math.floor(durationMinutes || 1), 720)); // 1-720 minutes (12 hours max)
       
@@ -43,7 +51,7 @@ export const morningCheckInService = {
         created_at: new Date().toISOString(),
       };
 
-      // Save to database
+      // Save to database with proper error handling
       const { error: saveError } = await supabase
         .from('morning_check_ins')
         .insert(morningCheckIn);
@@ -54,6 +62,11 @@ export const morningCheckInService = {
         // Handle specific constraint violations with user-friendly messages
         if (saveError.code === '23514' && saveError.message.includes('duration_minutes')) {
           throw new Error('Invalid session duration. Please try again.');
+        }
+        
+        // Handle duplicate key constraint violations as a fallback
+        if (saveError.code === '23505' && saveError.message.includes('morning_check_ins_user_id_date_key')) {
+          throw new Error('You have already completed your morning check-in for today. Each day only allows one morning check-in.');
         }
         
         throw new Error(`Failed to save morning check-in: ${saveError.message}`);

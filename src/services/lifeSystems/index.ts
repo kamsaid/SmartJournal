@@ -38,17 +38,17 @@ export const lifeSystemsUtils = {
     return icons[systemType as keyof typeof icons] || '⚡';
   },
 
-  // Get system color
+  // Get system color using Duson palette
   getSystemColor: (systemType: string): string => {
     const colors = {
-      health: '#22C55E',     // Green
-      wealth: '#F59E0B',     // Amber
-      relationships: '#EF4444', // Red
-      growth: '#3B82F6',     // Blue
-      purpose: '#8B5CF6',    // Purple
-      environment: '#06B6D4', // Cyan
+      health: '#FFB000',     // Duson Golden Yellow for health/growth
+      wealth: '#FFB000',     // Duson Golden Yellow for wealth/abundance
+      relationships: '#FD1F4A', // Duson Coral Red for relationships/passion
+      growth: '#FFB000',     // Duson Golden Yellow for growth/development
+      purpose: '#FD1F4A',    // Duson Coral Red for purpose/energy
+      environment: '#2D2C2E', // Duson Dark Charcoal for environment/stability
     };
-    return colors[systemType as keyof typeof colors] || '#6B73FF';
+    return colors[systemType as keyof typeof colors] || '#FFB000';
   },
 
   // Calculate system health score from 1-10
@@ -65,12 +65,12 @@ export const lifeSystemsUtils = {
     return 'Needs Attention';
   },
 
-  // Get health score color
+  // Get health score color using Duson palette
   getHealthScoreColor: (score: number): string => {
-    if (score >= 8) return '#22C55E'; // Green
-    if (score >= 6) return '#F59E0B'; // Amber
-    if (score >= 4) return '#EF4444'; // Red
-    return '#6B7280'; // Gray
+    if (score >= 8) return '#FFB000'; // Duson Golden Yellow for excellent
+    if (score >= 6) return '#FFCA5C'; // Lighter golden for good
+    if (score >= 4) return '#FD1F4A'; // Duson Coral Red for needs attention
+    return '#2D2C2E'; // Duson Dark Charcoal for poor
   },
 
   // Calculate overall life architecture score

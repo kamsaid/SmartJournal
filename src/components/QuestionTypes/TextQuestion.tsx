@@ -52,7 +52,7 @@ export default function TextQuestion({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          placeholderTextColor="#6b7280"
+                          placeholderTextColor="#5A4E41" // Duson dark beige-gray
           multiline
           numberOfLines={4}
           maxLength={maxLength}

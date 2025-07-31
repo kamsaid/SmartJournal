@@ -46,16 +46,16 @@ export const leverageUtils = {
     return icons[type as keyof typeof icons] || '🎯';
   },
 
-  // Get leverage type color
+  // Get leverage type color using Duson palette
   getLeverageTypeColor: (type: string): string => {
     const colors = {
-      keystone: '#22C55E',   // Green
-      bottleneck: '#EF4444', // Red
-      multiplier: '#3B82F6', // Blue
-      gateway: '#F59E0B',    // Amber
-      catalyst: '#8B5CF6',   // Purple
+      keystone: '#FFB000',   // Duson Golden Yellow for keystone opportunities
+      bottleneck: '#FD1F4A', // Duson Coral Red for bottlenecks/obstacles
+      multiplier: '#FFB000', // Duson Golden Yellow for multipliers
+      gateway: '#FFCA5C',    // Lighter golden for gateways
+      catalyst: '#FD1F4A',   // Duson Coral Red for catalysts/action
     };
-    return colors[type as keyof typeof colors] || '#6B73FF';
+    return colors[type as keyof typeof colors] || '#FFB000';
   },
 
   // Format impact score for display

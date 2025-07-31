@@ -90,7 +90,7 @@ export default function OnboardingScreen({ navigation }: OnboardingScreenProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#FAF5E6', // Duson Light Beige
   },
   scrollContent: {
     flex: 1,
@@ -109,10 +109,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#374151',
+    backgroundColor: '#A89379', // Duson medium gray-beige
   },
   progressDotActive: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FFB000', // Duson Golden Yellow
   },
   stepContainer: {
     flex: 1,
@@ -140,13 +140,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   nextButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FFB000', // Duson Golden Yellow
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
   },
   nextText: {
-    color: '#ffffff',
+    color: '#2D2C2E', // Duson Dark Charcoal for better contrast
     fontSize: 16,
     fontWeight: '600',
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   skipText: {
-    color: '#6b7280',
+    color: '#5A4E41', // Duson dark beige-gray
     fontSize: 14,
   },
 });

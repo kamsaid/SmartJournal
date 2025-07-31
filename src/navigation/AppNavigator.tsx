@@ -2,9 +2,12 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { CheckInType } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
+import { LoadingAnimation } from '@/components/animated';
+import AnimatedTabBar, { TAB_CONFIG } from '@/components/navigation/AnimatedTabBar';
+import { theme } from '@/design-system';
 
 // Placeholder screens
 import AuthScreen from '../screens/auth/AuthScreen';
@@ -68,7 +71,7 @@ function CheckInStackNavigator() {
     <CheckInStack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#0f0f23' },
+        cardStyle: { backgroundColor: theme.colors.dark.bg },
       }}
     >
       <CheckInStack.Screen 
@@ -116,7 +119,7 @@ function CalendarStackNavigator() {
     <CalendarStack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#0f0f23' },
+        cardStyle: { backgroundColor: theme.colors.dark.bg },
       }}
     >
       <CalendarStack.Screen 
@@ -137,7 +140,7 @@ function JournalStackNavigator() {
     <JournalStack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#0f0f23' },
+        cardStyle: { backgroundColor: theme.colors.dark.bg },
       }}
     >
       <JournalStack.Screen 
@@ -148,18 +151,27 @@ function JournalStackNavigator() {
   );
 }
 
-// Main app tabs after authentication
+// Main app tabs after authentication with custom animated tab bar
 function MainTabNavigator() {
   return (
     <Tab.Navigator
+      tabBar={(props) => (
+        <AnimatedTabBar
+          tabs={TAB_CONFIG.map(tab => ({
+            ...tab,
+            isActive: props.state.routeNames[props.state.index] === tab.key,
+          }))}
+          onTabPress={(tabKey) => {
+            const targetIndex = props.state.routeNames.findIndex(name => name === tabKey);
+            if (targetIndex !== -1) {
+              props.navigation.navigate(props.state.routeNames[targetIndex]);
+            }
+          }}
+          activeTabKey={props.state.routeNames[props.state.index]}
+        />
+      )}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#1a1a2e',
-          borderTopColor: '#16213e',
-        },
-        tabBarActiveTintColor: '#8b5cf6',
-        tabBarInactiveTintColor: '#6b7280',
       }}
     >
       <Tab.Screen 
@@ -195,8 +207,11 @@ function MainTabNavigator() {
 function LoadingScreen() {
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#8b5cf6" />
-      <Text style={styles.loadingText}>Loading...</Text>
+      <LoadingAnimation
+        variant="cosmic"
+        size="lg"
+        text="Loading Life Systems Architect..."
+      />
     </View>
   );
 }
@@ -219,7 +234,7 @@ export default function AppNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          cardStyle: { backgroundColor: '#0f0f23' },
+          cardStyle: { backgroundColor: theme.colors.dark.bg },
         }}
       >
         {user ? (
@@ -242,11 +257,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
-  },
-  loadingText: {
-    color: '#ffffff',
-    marginTop: 16,
-    fontSize: 16,
+    backgroundColor: theme.colors.dark.bg,
   },
 });

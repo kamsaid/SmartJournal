@@ -309,7 +309,7 @@ export default function CheckInScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+                  <ActivityIndicator size="large" color="#FFB000" /> {/* Duson Golden Yellow */}
         <Text style={styles.loadingText}>Preparing your personalized check-in...</Text>
       </View>
     );
@@ -414,7 +414,7 @@ export default function CheckInScreen() {
         {/* Processing indicator */}
         {isProcessing && (
           <View style={styles.processingContainer}>
-            <ActivityIndicator size="small" color="#8b5cf6" />
+                            <ActivityIndicator size="small" color="#FFB000" /> {/* Duson Golden Yellow */}
             <Text style={styles.processingText}>
               Creating your personalized challenge...
             </Text>

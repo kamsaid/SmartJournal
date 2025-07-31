@@ -147,7 +147,7 @@ export default function ChallengeCard({
               value={completionNotes}
               onChangeText={setCompletionNotes}
               placeholder="I noticed that... I learned... I felt..."
-              placeholderTextColor="#6b7280"
+              placeholderTextColor="#5A4E41" // Duson dark beige-gray
               multiline
               numberOfLines={4}
               textAlignVertical="top"

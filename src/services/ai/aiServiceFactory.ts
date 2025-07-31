@@ -455,4 +455,17 @@ export const aiPatterns = {
 
     return insights.filter(insight => insight.length > 20);
   },
+
+  // Get service metrics
+  getMetrics: () => {
+    return {
+      service: 'AIServiceFactory',
+      cache_size: aiServiceFactory.response_cache.size,
+      cache_hits: 0, // Would need to track this
+      cache_misses: 0, // Would need to track this
+      total_requests: 0, // Would need to track this
+      average_response_time: 0, // Would need to track this
+      status: 'operational'
+    };
+  },
 };

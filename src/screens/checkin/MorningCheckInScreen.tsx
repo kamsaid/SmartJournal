@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,8 @@ export default function MorningCheckInScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(true);
+  const [alreadyCompletedToday, setAlreadyCompletedToday] = useState(false);
   const [sessionStartTime] = useState(new Date());
   const [savedResult, setSavedResult] = useState<{
     checkInId: string;
@@ -42,6 +44,34 @@ export default function MorningCheckInScreen() {
     memoryId: string;
     challengeText: string;
   } | null>(null);
+
+  // Check if user has already completed morning check-in today
+  useEffect(() => {
+    const checkExistingCheckIn = async () => {
+      try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+          setIsCheckingExisting(false);
+          return;
+        }
+
+        const hasCompleted = await morningCheckInService.hasCompletedTodayMorningCheckIn(currentUserId);
+        if (hasCompleted) {
+          setAlreadyCompletedToday(true);
+          // Show a completed state without allowing form submission
+        }
+      } catch (error) {
+        console.error('Error checking existing morning check-in:', error);
+        // If there's an error checking, allow the user to proceed
+        // The server-side validation will catch any duplicates
+      }
+      setIsCheckingExisting(false);
+    };
+
+    if (!authLoading) {
+      checkExistingCheckIn();
+    }
+  }, [getCurrentUserId, authLoading]);
 
   const questions = [
     {
@@ -106,6 +136,11 @@ export default function MorningCheckInScreen() {
   };
 
   const handleSubmit = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // Calculate session duration with validation (ensure positive and within reasonable bounds)
@@ -156,16 +191,58 @@ export default function MorningCheckInScreen() {
         errorMessage,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Retry', onPress: handleSubmit }
+          { 
+            text: 'Retry', 
+            onPress: () => {
+              // Allow retry by resetting submission state
+              setIsSubmitting(false);
+              handleSubmit();
+            }
+          }
         ]
       );
+    } finally {
+      // Always reset submission state unless we successfully completed
+      if (!isCompleted) {
+        setIsSubmitting(false);
+      }
     }
-    setIsSubmitting(false);
   };
 
   const getProgress = () => {
     return ((currentStep + 1) / questions.length) * 100;
   };
+
+  // Loading state while checking for existing check-in
+  if (authLoading || isCheckingExisting) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.loadingText}>Checking your morning check-in status...</Text>
+      </View>
+    );
+  }
+
+  // Already completed state - prevent duplicate submissions
+  if (alreadyCompletedToday) {
+    return (
+      <View style={styles.completedContainer}>
+        <Text style={styles.completedTitle}>🌅 Morning Check-in Already Complete!</Text>
+        <Text style={styles.completedSubtitle}>
+          You've already completed your morning check-in for today.
+        </Text>
+        <Text style={styles.completedMessage}>
+          Each day allows only one morning check-in to maintain the integrity of your daily reflection practice. Come back tomorrow for your next check-in!
+        </Text>
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={() => {/* Navigate back to main screen */}}
+        >
+          <Text style={styles.doneButtonText}>Continue with Your Day</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Completed state
   if (isCompleted) {
@@ -242,7 +319,7 @@ export default function MorningCheckInScreen() {
             value={responses[currentQuestion.key]}
             onChangeText={handleResponseChange}
             placeholder={currentQuestion.placeholder}
-            placeholderTextColor="#6b7280"
+                            placeholderTextColor="#5A4E41" // Duson dark beige-gray
             multiline={currentQuestion.multiline}
             textAlignVertical="top"
             autoFocus
@@ -461,5 +538,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f0f23',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#ffffff',
+    fontSize: 16,
   },
 });

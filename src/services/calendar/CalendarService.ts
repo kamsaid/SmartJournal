@@ -79,60 +79,51 @@ export const calendarService = {
         return Promise.race([promise, timeoutPromise]);
       };
 
-      // Fetch each data source with individual timeouts and graceful fallbacks
-      const morningPromise = createMonthlyServiceTimeout(
+      // Fetch all data in parallel
+      const [morningCheckIns, nightlyCheckIns, journalEntries] = await Promise.all([
         supabase
           .from('morning_check_ins')
           .select('*')
           .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate),
-        'Morning check-ins monthly fetch',
-        5000
-      ).catch(error => {
-        console.error(`❌ CalendarService: Morning check-ins monthly fetch failed:`, error);
-        return { data: [] }; // Graceful fallback
-      });
-
-      const nightlyPromise = createMonthlyServiceTimeout(
+          .lte('date', endDate)
+          .then(result => {
+            if (result.error) {
+              console.error('❌ CalendarService: Morning check-ins error:', result.error);
+              return [];
+            }
+            return result.data || [];
+          }),
+        
         supabase
           .from('nightly_check_ins')
           .select('*')
           .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate),
-        'Nightly check-ins monthly fetch',
-        5000
-      ).catch(error => {
-        console.error(`❌ CalendarService: Nightly check-ins monthly fetch failed:`, error);
-        return { data: [] }; // Graceful fallback
-      });
-
-      const journalPromise = createMonthlyServiceTimeout(
+          .lte('date', endDate)
+          .then(result => {
+            if (result.error) {
+              console.error('❌ CalendarService: Nightly check-ins error:', result.error);
+              return [];
+            }
+            return result.data || [];
+          }),
+        
         supabase
           .from('journal_entries')
           .select('*')
           .eq('user_id', userId)
           .gte('date', startDate)
-          .lte('date', endDate),
-        'Journal entries monthly fetch',
-        5000
-      ).catch(error => {
-        console.error(`❌ CalendarService: Journal entries monthly fetch failed:`, error);
-        return { data: [] }; // Graceful fallback
-      });
-
-      const [morningResult, nightlyResult, journalResult] = await Promise.all([
-        morningPromise,
-        nightlyPromise,
-        journalPromise
+          .lte('date', endDate)
+          .then(result => {
+            if (result.error) {
+              console.error('❌ CalendarService: Journal entries error:', result.error);
+              return [];
+            }
+            return result.data || [];
+          }),
       ]);
       
-      // Extract data from results (graceful fallbacks already handled above)
-      const morningCheckIns = (morningResult as any)?.data || [];
-      const nightlyCheckIns = (nightlyResult as any)?.data || [];
-      const journalEntries = (journalResult as any)?.data || [];
-
       // Log results for debugging
       console.log(`✅ CalendarService: Monthly data loaded:`, {
         morningCheckIns: morningCheckIns.length,
@@ -312,48 +303,42 @@ export const calendarService = {
       });
 
       console.log(`📝 CalendarService: Fetching journal entries for ${date}`);
-      const journalPromise = createServiceTimeout(
-        supabase
-          .from('journal_entries')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('date', date),
-        'Journal entries service',
-        3000
-      ).then(result => {
-        if (result.error) {
-          console.error(`❌ CalendarService: Journal entries error for ${date}:`, result.error);
-          return { data: [] }; // Return empty array on error
-        }
-        return result;
-      }).catch(error => {
-        console.error(`❌ CalendarService: Journal entries failed for ${date}:`, error);
-        return { data: [] }; // Graceful fallback
-      });
+      // Fetch journal entries for the day with error handling
+      const journalResult = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', date)
+        .then(result => {
+          if (result.error) {
+            console.error(`❌ CalendarService: Journal entries error for ${date}:`, result.error);
+            return { data: [] };
+          }
+          return result;
+        });
 
-      // Execute all promises concurrently and collect results (allowing partial failures)
-      const [morningCheckIn, nightlyCheckIn, journalResult] = await Promise.all([
-        morningPromise,
-        nightlyPromise,
-        journalPromise
-      ]);
+              // Execute all promises concurrently and collect results (allowing partial failures)
+        const [morningCheckIn, nightlyCheckIn] = await Promise.all([
+          morningPromise,
+          nightlyPromise
+        ]);
 
-      console.log(`✅ CalendarService: All data fetched for ${date}:`, {
-        morningCheckIn: !!morningCheckIn,
-        nightlyCheckIn: !!nightlyCheckIn,
-        journalCount: journalResult?.data?.length || 0
-      });
+              console.log(`✅ CalendarService: All data fetched for ${date}:`, {
+          morningCheckIn: !!morningCheckIn,
+          nightlyCheckIn: !!nightlyCheckIn,
+          journalCount: journalResult?.data?.length || 0
+        });
 
-      const journalData = journalResult?.data || [];
+        const journalEntries = journalResult?.data || [];
 
       // Create summary for this day
       const summary: DailySummary = {
         date,
         morning_completed: !!morningCheckIn,
         nightly_completed: !!nightlyCheckIn,
-        journal_entries_count: journalData.length,
-        ai_insights_count: (morningCheckIn ? 1 : 0) + (nightlyCheckIn ? 1 : 0) + journalData.length,
-        key_themes: extractKeyThemes(morningCheckIn as any, nightlyCheckIn as any, journalData),
+        journal_entries_count: journalEntries.length,
+        ai_insights_count: (morningCheckIn ? 1 : 0) + (nightlyCheckIn ? 1 : 0) + journalEntries.length,
+        key_themes: extractKeyThemes(morningCheckIn as any, nightlyCheckIn as any, journalEntries),
         streak_day: undefined, // Would need more context to calculate
       };
 
@@ -363,7 +348,7 @@ export const calendarService = {
       const dayData: DayData = {
         morningCheckIn: (morningCheckIn as any) || undefined,
         nightlyCheckIn: (nightlyCheckIn as any) || undefined, 
-        journalEntries: journalData,
+        journalEntries: journalEntries,
         summary,
       };
       

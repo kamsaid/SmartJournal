@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withSequence,
+  withDelay,
+  interpolate,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import { userService } from '@/services/supabase/userService';
+import { AnimatedButton, AnimatedTextInput, AnimatedCard, LoadingAnimation } from '@/components/animated';
+import { theme, SPRING_CONFIGS, AnimationFactories } from '@/design-system';
 
 interface AuthScreenProps {
   navigation: any;
@@ -11,9 +23,39 @@ export default function AuthScreen({ navigation }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   
   // Use the authentication hook
   const { signIn, signUp, user, loading, error } = useAuth();
+  
+  // Animation values
+  const titleOpacity = useSharedValue(0);
+  const titleScale = useSharedValue(0.8);
+  const subtitleOpacity = useSharedValue(0);
+  const cardOpacity = useSharedValue(0);
+  const cardTranslateY = useSharedValue(50);
+  const formOpacity = useSharedValue(0);
+  const particleRotation = useSharedValue(0);
+  
+  // Initialize entrance animations
+  useEffect(() => {
+    // Staggered entrance animation
+    titleOpacity.value = withDelay(200, withTiming(1, { duration: 800 }));
+    titleScale.value = withDelay(200, withSpring(1, SPRING_CONFIGS.bouncy));
+    
+    subtitleOpacity.value = withDelay(600, withTiming(1, { duration: 600 }));
+    
+    cardOpacity.value = withDelay(1000, withTiming(1, { duration: 800 }));
+    cardTranslateY.value = withDelay(1000, withSpring(0, SPRING_CONFIGS.gentle));
+    
+    formOpacity.value = withDelay(1400, withTiming(1, { duration: 600 }));
+    
+    // Continuous particle rotation
+    particleRotation.value = withTiming(360, { duration: 20000 }, () => {
+      particleRotation.value = 0;
+    });
+  }, []);
 
   // Log when user is authenticated (navigation handled by AppNavigator)
   useEffect(() => {
@@ -29,9 +71,34 @@ export default function AuthScreen({ navigation }: AuthScreenProps) {
     }
   }, [error]);
 
+  const validateForm = () => {
+    let isValid = true;
+    
+    if (!email) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      setEmailError('Please enter a valid email');
+      isValid = false;
+    } else {
+      setEmailError('');
+    }
+    
+    if (!password) {
+      setPasswordError('Password is required');
+      isValid = false;
+    } else if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      isValid = false;
+    } else {
+      setPasswordError('');
+    }
+    
+    return isValid;
+  };
+
   const handleAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!validateForm()) {
       return;
     }
     
@@ -75,196 +142,287 @@ export default function AuthScreen({ navigation }: AuthScreenProps) {
   // Clear any existing errors when switching between sign in/up
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);
+    setEmailError('');
+    setPasswordError('');
+    
+    // Animate form transition
+    formOpacity.value = withSequence(
+      withTiming(0.7, { duration: 150 }),
+      withTiming(1, { duration: 150 })
+    );
   };
+  
+  // Animated styles
+  const titleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ scale: titleScale.value }],
+  }));
+  
+  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
+  }));
+  
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: cardOpacity.value,
+    transform: [{ translateY: cardTranslateY.value }],
+  }));
+  
+  const formAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: formOpacity.value,
+  }));
+  
+  const particleAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${particleRotation.value}deg` }],
+  }));
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Life Systems Architect</Text>
-      <Text style={styles.subtitle}>
-        Transform from reactive problem-solving to proactive life design
-      </Text>
-
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#6b7280"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      {/* Animated Background with Gradient */}
+      <LinearGradient
+        colors={[theme.colors.dark.bg, '#1a1a2e', theme.colors.dark.bg]}
+        style={StyleSheet.absoluteFillObject}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      {/* Floating Particles Background */}
+      <Animated.View style={[styles.particleContainer, particleAnimatedStyle]}>
+        {[...Array(6)].map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.particle,
+              {
+                top: `${20 + (index * 12)}%`,
+                left: `${10 + (index * 15)}%`,
+                opacity: 0.1,
+                transform: [{ scale: 0.5 + (index * 0.1) }],
+              },
+            ]}
+          />
+        ))}
+      </Animated.View>
+      
+      <View style={styles.content}>
+        {/* Animated Title */}
+        <Animated.Text style={[styles.title, titleAnimatedStyle]}>
+          Life Systems Architect
+        </Animated.Text>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#6b7280"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        {/* Animated Subtitle */}
+        <Animated.Text style={[styles.subtitle, subtitleAnimatedStyle]}>
+          Transform from reactive problem-solving to proactive life design
+        </Animated.Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleAuth}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
-          </Text>
-        </TouchableOpacity>
+        {/* Animated Card Container */}
+        <Animated.View style={cardAnimatedStyle}>
+          <AnimatedCard
+            variant="glass"
+            size="lg"
+            style={styles.authCard}
+            glowEffect={true}
+            borderGlow={true}
+          >
+            <Animated.View style={formAnimatedStyle}>
+              {/* Email Input */}
+              <AnimatedTextInput
+                label="Email"
+                variant="floating"
+                value={email}
+                onChangeText={setEmail}
+                error={emailError}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                glowOnFocus={true}
+                hapticFeedback={true}
+                containerStyle={styles.inputContainer}
+              />
+              
+              {/* Password Input */}
+              <AnimatedTextInput
+                label="Password"
+                variant="floating"
+                value={password}
+                onChangeText={setPassword}
+                error={passwordError}
+                secureTextEntry
+                glowOnFocus={true}
+                hapticFeedback={true}
+                containerStyle={styles.inputContainer}
+              />
 
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={toggleAuthMode}
-        >
-          <Text style={styles.switchText}>
-            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-          </Text>
-        </TouchableOpacity>
+              {/* Main Auth Button */}
+              <AnimatedButton
+                title={isSignUp ? 'Create Account' : 'Sign In'}
+                onPress={handleAuth}
+                variant="cosmic"
+                size="lg"
+                disabled={loading}
+                loading={loading}
+                fullWidth={true}
+                glowEffect={true}
+                hapticFeedback={true}
+                style={styles.authButton}
+              />
 
-        {/* Quick test account for development */}
-        <TouchableOpacity
-          style={styles.demoButton}
-          onPress={() => {
-            setEmail('dev@smartjournal.com'); // Use different email to avoid confirmation issues
-            setPassword('password123');
-          }}
-        >
-          <Text style={styles.demoButtonText}>
-            Use Dev Account (Fresh Email)
-          </Text>
-        </TouchableOpacity>
+              {/* Toggle Auth Mode */}
+              <AnimatedButton
+                title={isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                onPress={toggleAuthMode}
+                variant="ghost"
+                size="md"
+                fullWidth={true}
+                hapticFeedback={true}
+                style={styles.toggleButton}
+              />
 
-        {/* Emergency manual confirmation - working functionality */}
-        {__DEV__ && (
-          <>
-            {/* Emergency manual confirmation */}
-            <TouchableOpacity
-              style={styles.emergencyButton}
-              onPress={async () => {
-                if (!email) {
-                  Alert.alert('Error', 'Please enter an email address first');
-                  return;
-                }
-                
-                try {
-                  console.log('🚨 Emergency: Manually confirming user');
-                  const result = await userService.manuallyConfirmUser(email);
-                  
-                  Alert.alert(
-                    result.success ? '✅ Success' : '❌ Error',
-                    result.message,
-                    [{ text: 'OK' }]
-                  );
-                  
-                  if (result.success) {
-                    // Try to sign in after successful confirmation
-                    setTimeout(() => {
-                      Alert.alert(
-                        'Try Sign In',
-                        'User confirmed! Now try signing in with your password.',
-                        [{ text: 'OK' }]
-                      );
-                    }, 1000);
-                  }
-                } catch (error) {
-                  console.error('Emergency confirmation error:', error);
-                  Alert.alert('Error', 'Failed to manually confirm user');
-                }
-              }}
-            >
-              <Text style={styles.emergencyButtonText}>
-                🚨 EMERGENCY: Confirm User
-              </Text>
-            </TouchableOpacity>
-            
-          </>
+              {/* Development Buttons */}
+              {__DEV__ && (
+                <>
+                  <AnimatedButton
+                    title="Use Dev Account"
+                    onPress={() => {
+                      setEmail('dev@smartjournal.com');
+                      setPassword('password123');
+                    }}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth={true}
+                    style={styles.devButton}
+                  />
+
+                  <AnimatedButton
+                    title="🚨 EMERGENCY: Confirm User"
+                    onPress={async () => {
+                      if (!email) {
+                        Alert.alert('Error', 'Please enter an email address first');
+                        return;
+                      }
+                      
+                      try {
+                        console.log('🚨 Emergency: Manually confirming user');
+                        const result = await userService.manuallyConfirmUser(email);
+                        
+                        Alert.alert(
+                          result.success ? '✅ Success' : '❌ Error',
+                          result.message,
+                          [{ text: 'OK' }]
+                        );
+                        
+                        if (result.success) {
+                          setTimeout(() => {
+                            Alert.alert(
+                              'Try Sign In',
+                              'User confirmed! Now try signing in with your password.',
+                              [{ text: 'OK' }]
+                            );
+                          }, 1000);
+                        }
+                      } catch (error) {
+                        console.error('Emergency confirmation error:', error);
+                        Alert.alert('Error', 'Failed to manually confirm user');
+                      }
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    fullWidth={true}
+                    style={styles.emergencyButton}
+                  />
+                </>
+              )}
+            </Animated.View>
+          </AnimatedCard>
+        </Animated.View>
+        
+        {/* Loading Overlay */}
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <LoadingAnimation
+              variant="cosmic"
+              size="lg"
+              text="Authenticating..."
+            />
+          </View>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
-    padding: 20,
+    backgroundColor: theme.colors.dark.bg,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.xl,
     justifyContent: 'center',
   },
+  particleContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 0,
+  },
+  particle: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary[500],
+  },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#8b5cf6',
+    fontSize: theme.typography.fontSizes['4xl'],
+    fontWeight: theme.typography.fontWeights.extrabold,
+    color: theme.colors.primary[500],
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
+    textShadowColor: `${theme.colors.primary[500]}40`,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#9ca3af',
+    fontSize: theme.typography.fontSizes.lg,
+    color: theme.colors.dark.text.secondary,
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
+    marginBottom: theme.spacing['5xl'],
+    lineHeight: theme.typography.lineHeights.relaxed * theme.typography.fontSizes.lg,
+    paddingHorizontal: theme.spacing.lg,
   },
-  form: {
-    gap: 16,
+  authCard: {
+    marginVertical: theme.spacing.lg,
   },
-  input: {
-    backgroundColor: '#1f2937',
-    borderRadius: 12,
-    padding: 16,
-    color: '#ffffff',
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#374151',
+  inputContainer: {
+    marginBottom: theme.spacing.lg,
   },
-  button: {
-    backgroundColor: '#8b5cf6',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
+  authButton: {
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  toggleButton: {
+    marginBottom: theme.spacing.lg,
   },
-  switchButton: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  switchText: {
-    color: '#6366f1',
-    fontSize: 14,
-  },
-  demoButton: {
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#374151',
-  },
-  demoButtonText: {
-    color: '#9ca3af',
-    fontSize: 14,
-    fontWeight: '500',
+  devButton: {
+    marginBottom: theme.spacing.md,
+    opacity: 0.8,
   },
   emergencyButton: {
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#d97706',
+    marginBottom: theme.spacing.md,
+    opacity: 0.6,
   },
-  emergencyButtonText: {
-    color: '#d97706',
-    fontSize: 12,
-    fontWeight: '500',
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 15, 35, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });

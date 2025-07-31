@@ -131,47 +131,49 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
     padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 24,
   },
   phaseContainer: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   phaseTitle: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: '600',
     marginBottom: 4,
   },
   phaseName: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     fontWeight: '600',
     marginBottom: 4,
   },
   phaseInfo: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     marginBottom: 16,
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(250, 245, 230, 0.3)', // Cream with opacity for background
     borderRadius: 3,
     marginBottom: 16,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Crimson progress fill
     borderRadius: 3,
   },
   milestonesContainer: {
@@ -179,7 +181,7 @@ const styles = StyleSheet.create({
   },
   milestonesTitle: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: '600',
     marginBottom: 12,
   },
@@ -192,19 +194,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(250, 245, 230, 0.3)', // Cream with opacity for uncompleted
     marginRight: 12,
   },
   milestoneCompleted: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#FFB000', // Golden for completed milestones (special highlight)
   },
   milestoneText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     flex: 1,
   },
   milestoneTextCompleted: {
-    color: '#d1d5db',
+    color: '#FAF5E6', // Full cream for completed text
   },
   reflectionsContainer: {
     marginBottom: 24,
@@ -212,14 +214,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 16,
   },
   reflectionCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   reflectionHeader: {
     flexDirection: 'row',
@@ -229,18 +233,18 @@ const styles = StyleSheet.create({
   },
   reflectionDate: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     fontWeight: '500',
   },
   depthBadge: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Crimson background
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   depthText: {
     fontSize: 12,
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     fontWeight: '600',
   },
   insightsContainer: {
@@ -248,7 +252,7 @@ const styles = StyleSheet.create({
   },
   insightText: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 20,
   },
   statsContainer: {
@@ -260,22 +264,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statItem: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     flex: 1,
     minWidth: '45%',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     textAlign: 'center',
   },
 });

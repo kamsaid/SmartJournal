@@ -22,6 +22,10 @@ export {
   patternService,
 } from './database/DatabaseService';
 
+// Journal Service
+export * from './journal/JournalService';
+export { default as journalService } from './journal/JournalService';
+
 // Legacy Compatibility Exports (for gradual migration)
 export { 
   aiOrchestrator,

@@ -16,18 +16,18 @@ export const transformationUtils = {
     return ((currentPhase - 1) + phaseProgress) / 7;
   },
 
-  // Get phase color for UI
+  // Get phase color for UI using Duson palette
   getPhaseColor: (phase: number): string => {
     const colors = {
-      1: '#FF6B6B', // Recognition - Red
-      2: '#4ECDC4', // Understanding - Teal  
-      3: '#45B7D1', // Realization - Blue
-      4: '#96CEB4', // Transformation - Green
-      5: '#FFEAA7', // Vision - Yellow
-      6: '#DDA0DD', // Reality - Purple
-      7: '#FFD700', // Integration - Gold
+      1: '#FD1F4A', // Recognition - Duson Coral Red
+      2: '#FF6195', // Understanding - Medium coral  
+      3: '#FFB000', // Realization - Duson Golden Yellow
+      4: '#FFCA5C', // Transformation - Light golden
+      5: '#FFE5B9', // Vision - Very light golden
+      6: '#E69D00', // Reality - Darker golden
+      7: '#FFB000', // Integration - Duson Golden Yellow
     };
-    return colors[phase as keyof typeof colors] || '#6B73FF';
+    return colors[phase as keyof typeof colors] || '#FFB000';
   },
 
   // Get phase icon for UI

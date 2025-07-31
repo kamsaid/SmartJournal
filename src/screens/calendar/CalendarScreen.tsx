@@ -223,7 +223,7 @@ export default function CalendarScreen({ navigation }: CalendarScreenProps) {
         style={[
           styles.dayContainer,
           { 
-            backgroundColor: day.isToday ? '#8b5cf6' : 'transparent',
+            backgroundColor: day.isToday ? '#FFB000' : 'transparent', // Duson Golden Yellow for today
             opacity: day.isCurrentMonth ? 1 : 0.3,
           },
         ]}
@@ -258,7 +258,7 @@ export default function CalendarScreen({ navigation }: CalendarScreenProps) {
   if (loading || authLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+        <ActivityIndicator size="large" color="#FFB000" /> {/* Duson Golden Yellow */}
         <Text style={styles.loadingText}>
           {authLoading ? 'Authenticating...' : loadingMessage}
         </Text>
@@ -392,18 +392,18 @@ export default function CalendarScreen({ navigation }: CalendarScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
   },
   header: {
     padding: 20,
@@ -412,12 +412,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
   },
   monthNavigation: {
     flexDirection: 'row',
@@ -430,19 +430,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   navButtonText: {
     fontSize: 24,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: 'bold',
   },
   monthTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
   },
   legend: {
     flexDirection: 'row',
@@ -459,14 +461,16 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
   },
   calendarContainer: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   weekHeader: {
     flexDirection: 'row',
@@ -476,7 +480,7 @@ const styles = StyleSheet.create({
   weekHeaderText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     width: DAY_SIZE,
     textAlign: 'center',
   },
@@ -498,6 +502,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
+    color: '#FAF5E6', // Cream text
   },
   dayIcon: {
     fontSize: 12,
@@ -511,12 +516,13 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
+    backgroundColor: '#FD1F4A', // Crimson indicator
   },
   streakIndicator: {
     position: 'absolute',
     top: 2,
     left: 2,
-    backgroundColor: '#10b981',
+    backgroundColor: '#FFB000', // Golden for success (special highlight)
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -525,7 +531,7 @@ const styles = StyleSheet.create({
   },
   streakText: {
     fontSize: 10,
-    color: '#ffffff',
+    color: '#2D2C2E', // Dark text on golden background
     fontWeight: 'bold',
   },
   insightsContainer: {
@@ -535,7 +541,7 @@ const styles = StyleSheet.create({
   insightsTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 20,
   },
   statsRow: {
@@ -544,84 +550,92 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     textAlign: 'center',
   },
   aiSummaryCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+    borderLeftColor: '#FD1F4A', // Crimson accent border
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   aiSummaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#10b981',
+    color: '#FD1F4A', // Crimson accent
     marginBottom: 8,
   },
   aiSummaryText: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 20,
   },
   growthCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
+    borderLeftColor: '#FFB000', // Golden accent for growth (special highlight)
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   growthTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#f59e0b',
+    color: '#FFB000', // Golden accent for growth (special highlight)
     marginBottom: 8,
   },
   growthItem: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 20,
     marginBottom: 4,
   },
   focusCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
+    borderLeftColor: '#FD1F4A', // Crimson accent border
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   focusTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     marginBottom: 8,
   },
   focusItem: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 20,
     marginBottom: 4,
   },
   errorBanner: {
-    backgroundColor: '#7f1d1d',
+    backgroundColor: 'rgba(253, 31, 74, 0.2)', // Crimson error background with transparency
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 16,
@@ -629,21 +643,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#FD1F4A', // Crimson border
   },
   errorText: {
-    color: '#fef2f2',
+    color: '#FAF5E6', // Cream text
     fontSize: 14,
     flex: 1,
     marginRight: 12,
   },
   retryButton: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#FD1F4A', // Crimson background
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     fontSize: 14,
     fontWeight: '600',
   },

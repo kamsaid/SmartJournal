@@ -83,11 +83,11 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
 
       console.log('✅ DayDetailScreen: Successfully loaded day data:', dayData);
 
-      if (dayData) {
+      if (dayData && 'morningCheckIn' in dayData) {
         setDayData({
           morningCheckIn: dayData.morningCheckIn,
           nightlyCheckIn: dayData.nightlyCheckIn,
-          journalEntries: dayData.journalEntries,
+          journalEntries: dayData.journalEntries || [],
         });
         console.log('📝 DayDetailScreen: Set day data with:', {
           morningCheckIn: !!dayData.morningCheckIn,
@@ -343,7 +343,7 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
   if (loading || authLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+        <ActivityIndicator size="large" color="#FD1F4A" /> {/* Crimson loading indicator */}
         <Text style={styles.loadingText}>
           {authLoading ? 'Authenticating...' : 'Loading day details...'}
         </Text>
@@ -406,18 +406,18 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
   },
   header: {
     padding: 20,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 18,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: '600',
   },
   headerContent: {
@@ -437,27 +437,29 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 4,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
   },
   summaryCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#8b5cf6',
+    borderLeftColor: '#FD1F4A', // Crimson accent border
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 16,
   },
   summaryStats: {
@@ -470,20 +472,20 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     marginBottom: 4,
   },
   statValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
   },
   themesContainer: {
     marginBottom: 12,
   },
   themesTitle: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: '#FAF5E6', // Cream text
     marginBottom: 8,
   },
   themesTags: {
@@ -491,32 +493,36 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   themeTag: {
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(253, 31, 74, 0.2)', // Crimson with transparency
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 8,
     marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(253, 31, 74, 0.4)', // Crimson border with opacity
   },
   themeTagText: {
     fontSize: 12,
-    color: '#d1d5db',
+    color: '#FAF5E6', // Cream text
   },
   streakContainer: {
     marginTop: 8,
   },
   streakText: {
     fontSize: 14,
-    color: '#f59e0b',
+    color: '#FFB000', // Golden for streak (special highlight)
     fontWeight: '600',
     textAlign: 'center',
   },
   sectionCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -527,56 +533,60 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
   },
   sectionTime: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
   },
   responseItem: {
     marginBottom: 16,
   },
   questionText: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: '600',
     marginBottom: 6,
   },
   responseText: {
     fontSize: 16,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 22,
   },
   listItem: {
     fontSize: 16,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 22,
     marginBottom: 4,
   },
   reflectionCard: {
-    backgroundColor: '#0f1419',
+    backgroundColor: '#1F1E20', // Very dark charcoal for nested card
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#10b981',
+    borderLeftColor: '#FFB000', // Golden for AI insights (special highlight)
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.1)', // Subtle cream border
   },
   reflectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#10b981',
+    color: '#FFB000', // Golden for AI insights (special highlight)
     marginBottom: 12,
   },
   alignmentScore: {
-    backgroundColor: '#1f2937',
+    backgroundColor: '#2D2C2E', // Dark charcoal for score background
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 176, 0, 0.3)', // Golden border with opacity
   },
   alignmentText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#10b981',
+    color: '#FFB000', // Golden for score (special highlight)
     textAlign: 'center',
   },
   insightSection: {
@@ -585,31 +595,33 @@ const styles = StyleSheet.create({
   insightTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#d1d5db',
+    color: '#FAF5E6', // Cream text
     marginBottom: 6,
   },
   insightItem: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     lineHeight: 20,
     marginBottom: 4,
   },
   journalEntry: {
-    backgroundColor: '#0f1419',
+    backgroundColor: '#1F1E20', // Very dark charcoal for journal entries
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.1)', // Subtle cream border
   },
   journalHeader: {
     marginBottom: 12,
   },
   journalMeta: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
   },
   journalContent: {
     fontSize: 16,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.9)', // Cream with slight opacity
     lineHeight: 22,
     marginBottom: 12,
   },
@@ -618,7 +630,7 @@ const styles = StyleSheet.create({
   },
   patternsTitle: {
     fontSize: 12,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     marginBottom: 6,
   },
   patternTags: {
@@ -626,23 +638,25 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   patternTag: {
-    backgroundColor: '#4c1d95',
+    backgroundColor: 'rgba(253, 31, 74, 0.2)', // Crimson with transparency
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 6,
     marginBottom: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(253, 31, 74, 0.4)', // Crimson border with opacity
   },
   patternTagText: {
     fontSize: 11,
-    color: '#c4b5fd',
+    color: '#FAF5E6', // Cream text
   },
   expandButton: {
     alignSelf: 'flex-start',
   },
   expandButtonText: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontWeight: '600',
   },
   emptyState: {
@@ -653,12 +667,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6b7280',
+    color: 'rgba(250, 245, 230, 0.6)', // Muted cream
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#9ca3af',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -668,19 +682,19 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#ef4444',
+    color: '#FD1F4A', // Crimson for errors
     textAlign: 'center',
     marginBottom: 10,
   },
   retryButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Crimson background
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   retryButtonText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     fontWeight: '600',
   },
 });

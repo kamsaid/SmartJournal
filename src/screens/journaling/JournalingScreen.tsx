@@ -10,19 +10,26 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { AIAssistanceMode, JournalEntry } from '@/types/database';
 import { DEMO_USER_UUID } from '@/utils/uuid';
+import journalService from '@/services/journal/JournalService';
+import { unifiedAIService } from '@/services/ai/unifiedAIService';
+import { getCurrentUser } from '@/services/supabase/AuthService';
+import { Ionicons } from '@expo/vector-icons';
 
 interface JournalingScreenProps {
   navigation: any;
 }
 
-interface AIMessage {
+// Combined message type for both journal entries and AI messages
+interface Message {
   id: string;
-  role: 'ai' | 'user';
+  type: 'user' | 'ai';
   content: string;
   timestamp: string;
+  isJournalEntry?: boolean; // Indicates if this is part of the journal
 }
 
 interface JournalSession {
@@ -30,193 +37,202 @@ interface JournalSession {
   wordCount: number;
   duration: number;
   assistanceMode: AIAssistanceMode;
-  aiConversation: AIMessage[];
+  messages: Message[];
   patterns: string[];
   insights: string[];
 }
 
+const assistanceModes = [
+  {
+    key: 'solo' as AIAssistanceMode,
+    title: 'Solo Writing',
+    description: 'Write freely without AI',
+    icon: '✍️',
+    color: '#6b7280',
+  },
+  {
+    key: 'guided' as AIAssistanceMode,
+    title: 'Guided Writing',
+    description: 'AI provides gentle prompts',
+    icon: '🧭',
+    color: '#10b981',
+  },
+  {
+    key: 'wisdom' as AIAssistanceMode,
+    title: 'Wisdom Mode',
+    description: 'Deep philosophical insights',
+    icon: '🦉',
+    color: '#8b5cf6',
+  },
+  {
+    key: 'pattern' as AIAssistanceMode,
+    title: 'Pattern Recognition',
+    description: 'AI identifies patterns',
+    icon: '🔍',
+    color: '#f59e0b',
+  },
+];
+
 export default function JournalingScreen({ navigation }: JournalingScreenProps) {
-  const [selectedMode, setSelectedMode] = useState<AIAssistanceMode>('solo');
-  const [journalContent, setJournalContent] = useState('');
+  const [selectedMode, setSelectedMode] = useState<AIAssistanceMode>('guided');
   const [session, setSession] = useState<JournalSession>({
     content: '',
     wordCount: 0,
     duration: 0,
-    assistanceMode: 'solo',
-    aiConversation: [],
+    assistanceMode: 'guided',
+    messages: [],
     patterns: [],
     insights: [],
   });
+  const [inputText, setInputText] = useState('');
   const [aiThinking, setAiThinking] = useState(false);
-  const [aiInput, setAiInput] = useState('');
   const [sessionStartTime] = useState(Date.now());
-  const [showAIPanel, setShowAIPanel] = useState(false);
-  const textInputRef = useRef<TextInput>(null);
+  const [showModeSelector, setShowModeSelector] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Animation for mode selector
+  const modeSelectorHeight = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    // Update session whenever content changes
-    const wordCount = journalContent.trim().split(/\s+/).filter(word => word.length > 0).length;
-    const duration = Math.floor((Date.now() - sessionStartTime) / 60000); // minutes
-    
-    setSession(prev => ({
-      ...prev,
-      content: journalContent,
-      wordCount,
-      duration,
-      assistanceMode: selectedMode,
-    }));
-  }, [journalContent, selectedMode, sessionStartTime]);
+    // Calculate duration
+    const interval = setInterval(() => {
+      const duration = Math.floor((Date.now() - sessionStartTime) / 60000);
+      setSession(prev => ({ ...prev, duration }));
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [sessionStartTime]);
 
   useEffect(() => {
-    // Show/hide AI panel based on mode
-    setShowAIPanel(selectedMode !== 'solo');
+    // Animate mode selector
+    Animated.timing(modeSelectorHeight, {
+      toValue: showModeSelector ? 150 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [showModeSelector]);
+
+  useEffect(() => {
+    // Auto-scroll to bottom when new messages are added
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, [session.messages]);
+
+  useEffect(() => {
+    // Send initial AI greeting if not solo mode
+    if (selectedMode !== 'solo' && session.messages.length === 0) {
+      const greetingMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: getInitialGreeting(selectedMode),
+        timestamp: new Date().toISOString(),
+      };
+      setSession(prev => ({
+        ...prev,
+        messages: [greetingMessage],
+      }));
+    }
   }, [selectedMode]);
 
-  const assistanceModes = [
-    {
-      key: 'solo' as AIAssistanceMode,
-      title: 'Solo Writing',
-      description: 'Write freely without AI assistance',
-      icon: '✍️',
-      color: '#6b7280',
-    },
-    {
-      key: 'guided' as AIAssistanceMode,
-      title: 'Guided Writing',
-      description: 'AI provides gentle prompts and questions',
-      icon: '🧭',
-      color: '#10b981',
-    },
-    {
-      key: 'wisdom' as AIAssistanceMode,
-      title: 'Wisdom Mode',
-      description: 'Deep philosophical insights and reflections',
-      icon: '🦉',
-      color: '#8b5cf6',
-    },
-    {
-      key: 'pattern' as AIAssistanceMode,
-      title: 'Pattern Recognition',
-      description: 'AI helps identify patterns and connections',
-      icon: '🔍',
-      color: '#f59e0b',
-    },
-  ];
+  const getInitialGreeting = (mode: AIAssistanceMode): string => {
+    const greetings = {
+      guided: "Hello! I'm here to help guide your journaling today. What's on your mind? Feel free to write about anything - your thoughts, feelings, or experiences.",
+      wisdom: "Welcome, seeker. Let us explore the depths of your experience together. What wisdom are you carrying within you today?",
+      pattern: "Hi there! I'll be watching for patterns and connections in your writing today. Start sharing your thoughts, and I'll help you see the bigger picture.",
+      solo: "",
+    };
+    return greetings[mode];
+  };
 
   const handleModeChange = (mode: AIAssistanceMode) => {
     setSelectedMode(mode);
+    setShowModeSelector(false);
     
-    // Initialize AI conversation based on mode
-    if (mode !== 'solo' && session.aiConversation.length === 0) {
-      initializeAIConversation(mode);
-    }
-  };
-
-  const initializeAIConversation = async (mode: AIAssistanceMode) => {
-    setAiThinking(true);
-    
-    try {
-      // Mock AI initialization - in real app, this would call JournalingService
-      let initialMessage = '';
-      
-      switch (mode) {
-        case 'guided':
-          initialMessage = "I'm here to help guide your writing. What's on your mind today? Feel free to start writing, and I'll offer gentle prompts along the way.";
-          break;
-        case 'wisdom':
-          initialMessage = "Let's explore the deeper currents of your thoughts today. What situation or feeling would you like to examine more closely?";
-          break;
-        case 'pattern':
-          initialMessage = "I'll help you identify patterns and connections in your thoughts. Start writing about whatever comes to mind, and I'll notice recurring themes.";
-          break;
-      }
-
-      const aiMessage: AIMessage = {
-        id: Date.now().toString(),
-        role: 'ai',
-        content: initialMessage,
-        timestamp: new Date().toISOString(),
-      };
-
-      setSession(prev => ({
-        ...prev,
-        aiConversation: [aiMessage],
-      }));
-    } catch (error) {
-      console.error('Error initializing AI conversation:', error);
-    } finally {
-      setAiThinking(false);
-    }
-  };
-
-  const sendAIMessage = async () => {
-    if (!aiInput.trim()) return;
-
-    const userMessage: AIMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: aiInput.trim(),
-      timestamp: new Date().toISOString(),
-    };
-
+    // Clear AI messages when switching modes
+    const journalMessages = session.messages.filter(msg => msg.isJournalEntry);
     setSession(prev => ({
       ...prev,
-      aiConversation: [...prev.aiConversation, userMessage],
+      assistanceMode: mode,
+      messages: journalMessages,
     }));
-
-    setAiInput('');
-    setAiThinking(true);
-
-    try {
-      // Mock AI response - in real app, this would call JournalingService
-      const aiResponse = await generateAIResponse(userMessage.content, selectedMode, journalContent);
-      
-      const aiMessage: AIMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        content: aiResponse,
-        timestamp: new Date().toISOString(),
-      };
-
-      setSession(prev => ({
-        ...prev,
-        aiConversation: [...prev.aiConversation, aiMessage],
-      }));
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      Alert.alert('Error', 'Failed to get AI response');
-    } finally {
-      setAiThinking(false);
-    }
   };
 
-  const generateAIResponse = async (userInput: string, mode: AIAssistanceMode, content: string): Promise<string> => {
-    // Mock AI responses based on mode
-    const responses = {
-      guided: [
-        "That's an interesting perspective. Can you tell me more about how that made you feel?",
-        "I notice you mentioned that several times. What do you think that pattern might mean?",
-        "What would you say to a friend who was experiencing something similar?",
-        "How do you think this situation connects to your larger goals or values?",
-      ],
-      wisdom: [
-        "The ancient Stoics would say that our perception shapes our reality. How might this situation look different from another angle?",
-        "Consider the Japanese concept of 'mono no aware' - the bittersweet awareness of impermanence. How does this lens change your view?",
-        "What wisdom do you think your future self would offer about this situation?",
-        "There's often a deeper truth beneath surface emotions. What might yours be trying to tell you?",
-      ],
-      pattern: [
-        "I'm noticing a recurring theme around control in your writing. Is this something you've been thinking about lately?",
-        "You've mentioned relationships in different contexts. There might be a pattern worth exploring there.",
-        "Your language suggests a tension between wanting change and fearing it. Does that resonate?",
-        "I see patterns of growth mindset in your reflections. That's a powerful foundation to build on.",
-      ],
+  const sendMessage = async () => {
+    if (!inputText.trim() || aiThinking) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputText.trim(),
+      timestamp: new Date().toISOString(),
+      isJournalEntry: true,
     };
 
-    if (mode === 'solo') return '';
-    
-    const modeResponses = responses[mode] || responses.guided;
-    return modeResponses[Math.floor(Math.random() * modeResponses.length)];
+    // Update session with user message
+    setSession(prev => {
+      const newContent = prev.content ? `${prev.content}\n\n${inputText.trim()}` : inputText.trim();
+      const wordCount = newContent.split(/\s+/).filter(word => word.length > 0).length;
+      
+      return {
+        ...prev,
+        content: newContent,
+        wordCount,
+        messages: [...prev.messages, userMessage],
+      };
+    });
+
+    setInputText('');
+
+    // Get AI response if not in solo mode
+    if (selectedMode !== 'solo') {
+      setAiThinking(true);
+      
+      try {
+        const user = await getCurrentUser();
+        const userId = user?.id || DEMO_USER_UUID;
+        
+        // Get AI response using unified AI service
+        const aiResponse = await unifiedAIService.generateResponse(
+          { 
+            user: { id: userId } as any,
+            conversationHistory: session.messages.map(msg => ({
+              role: msg.type === 'user' ? 'user' : 'assistant',
+              content: msg.content,
+            })),
+          },
+          userMessage.content,
+          {
+            type: 'question',
+            system: selectedMode === 'wisdom' ? 'wisdom_guide' : 
+                    selectedMode === 'pattern' ? 'pattern_recognizer' : 
+                    'accountability_guide',
+            depth_level: 3,
+          }
+        );
+
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: aiResponse.content,
+          timestamp: new Date().toISOString(),
+        };
+
+        setSession(prev => ({
+          ...prev,
+          messages: [...prev.messages, aiMessage],
+          patterns: aiResponse.metadata.patterns_identified || prev.patterns,
+          insights: aiResponse.metadata.wisdom_insights ? 
+            Object.values(aiResponse.metadata.wisdom_insights).filter(v => typeof v === 'string') as string[] : 
+            prev.insights,
+        }));
+      } catch (error) {
+        console.error('Error getting AI response:', error);
+      } finally {
+        setAiThinking(false);
+      }
+    }
   };
 
   const saveJournalEntry = async () => {
@@ -225,10 +241,15 @@ export default function JournalingScreen({ navigation }: JournalingScreenProps) 
       return;
     }
 
+    setIsSaving(true);
+
     try {
-      // Mock save - in real app, this would call JournalingService
-      const entry: Partial<JournalEntry> = {
-        user_id: DEMO_USER_UUID,
+      const user = await getCurrentUser();
+      const userId = user?.id || DEMO_USER_UUID;
+
+      // Create journal entry
+      await journalService.createJournalEntry({
+        user_id: userId,
         date: new Date().toISOString().split('T')[0],
         content: session.content,
         ai_assistance_used: session.assistanceMode,
@@ -236,120 +257,85 @@ export default function JournalingScreen({ navigation }: JournalingScreenProps) 
         writing_session_duration: session.duration,
         patterns_identified: session.patterns,
         ai_insights: session.insights,
-        ai_conversation_thread: session.aiConversation.map(msg => ({
-          message_id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-        })),
-      };
+        ai_conversation_thread: session.messages
+          .filter(msg => !msg.isJournalEntry || msg.type === 'ai')
+          .map(msg => ({
+            message_id: msg.id,
+            role: msg.type,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          })),
+      });
 
       Alert.alert(
         'Entry Saved',
-        `Your ${session.wordCount}-word journal entry has been saved with ${session.assistanceMode} assistance.`,
+        `Your ${session.wordCount}-word journal entry has been saved.`,
         [
           { text: 'Continue Writing', style: 'cancel' },
           { 
             text: 'New Entry', 
             onPress: () => {
-              setJournalContent('');
-              setSession(prev => ({
-                ...prev,
+              // Reset session
+              setSession({
                 content: '',
                 wordCount: 0,
-                aiConversation: [],
+                duration: 0,
+                assistanceMode: selectedMode,
+                messages: [],
                 patterns: [],
                 insights: [],
-              }));
+              });
+              setInputText('');
             }
           },
         ]
       );
     } catch (error) {
       console.error('Error saving journal entry:', error);
-      Alert.alert('Error', 'Failed to save journal entry');
+      Alert.alert('Error', 'Failed to save journal entry. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const renderModeSelector = () => (
-    <View style={styles.modeSelector}>
-      <Text style={styles.modeSelectorTitle}>Choose Your Writing Mode</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.modesContainer}>
-        {assistanceModes.map((mode) => (
-          <TouchableOpacity
-            key={mode.key}
-            style={[
-              styles.modeCard,
-              selectedMode === mode.key && { borderColor: mode.color, borderWidth: 2 },
-            ]}
-            onPress={() => handleModeChange(mode.key)}
-          >
-            <Text style={styles.modeIcon}>{mode.icon}</Text>
-            <Text style={styles.modeTitle}>{mode.title}</Text>
-            <Text style={styles.modeDescription}>{mode.description}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
-  const renderAIPanel = () => {
-    if (!showAIPanel) return null;
-
+  const renderMessage = (message: Message, index: number) => {
+    const isUser = message.type === 'user';
+    
     return (
-      <View style={styles.aiPanel}>
-        <View style={styles.aiHeader}>
-          <Text style={styles.aiTitle}>
-            {assistanceModes.find(mode => mode.key === selectedMode)?.icon} AI Assistant
+      <View
+        key={message.id}
+        style={[
+          styles.messageContainer,
+          isUser ? styles.userMessageContainer : styles.aiMessageContainer,
+        ]}
+      >
+        {!isUser && (
+          <View style={styles.aiAvatar}>
+            <Text style={styles.aiAvatarText}>
+              {assistanceModes.find(m => m.key === selectedMode)?.icon || '🤖'}
+            </Text>
+          </View>
+        )}
+        
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.aiBubble,
+          ]}
+        >
+          <Text style={[
+            styles.messageText,
+            isUser ? styles.userText : styles.aiText,
+          ]}>
+            {message.content}
           </Text>
-          <TouchableOpacity onPress={() => setShowAIPanel(false)}>
-            <Text style={styles.hideButton}>Hide</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.aiConversation}>
-          {session.aiConversation.map((message) => (
-            <View
-              key={message.id}
-              style={[
-                styles.aiMessage,
-                message.role === 'user' ? styles.userMessage : styles.assistantMessage,
-              ]}
-            >
-              <Text style={[
-                styles.aiMessageText,
-                message.role === 'user' ? styles.userMessageText : styles.assistantMessageText,
-              ]}>
-                {message.content}
-              </Text>
-            </View>
-          ))}
           
-          {aiThinking && (
-            <View style={[styles.aiMessage, styles.assistantMessage]}>
-              <ActivityIndicator size="small" color="#8b5cf6" />
-              <Text style={styles.thinkingText}>Thinking...</Text>
+          {message.isJournalEntry && (
+            <View style={styles.journalIndicator}>
+              <Ionicons name="book-outline" size={12} color="#FFB000" /> {/* Duson Golden Yellow */}
+              <Text style={styles.journalIndicatorText}>Journal Entry</Text>
             </View>
           )}
-        </ScrollView>
-
-        <View style={styles.aiInputContainer}>
-          <TextInput
-            style={styles.aiInput}
-            value={aiInput}
-            onChangeText={setAiInput}
-            placeholder="Ask the AI assistant..."
-            placeholderTextColor="#6b7280"
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, !aiInput.trim() && styles.sendButtonDisabled]}
-            onPress={sendAIMessage}
-            disabled={!aiInput.trim() || aiThinking}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -366,62 +352,122 @@ export default function JournalingScreen({ navigation }: JournalingScreenProps) 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>‹ Back</Text>
+                      <Ionicons name="chevron-back" size={24} color="#FFB000" /> {/* Duson Golden Yellow */}
         </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.title}>AI-Assisted Journaling</Text>
-          <Text style={styles.subtitle}>
-            {session.wordCount} words • {session.duration} min
-          </Text>
+          <Text style={styles.title}>Journal</Text>
+          <TouchableOpacity 
+            style={styles.modeButton}
+            onPress={() => setShowModeSelector(!showModeSelector)}
+          >
+            <Text style={styles.modeButtonText}>
+              {assistanceModes.find(m => m.key === selectedMode)?.icon} {selectedMode}
+            </Text>
+            <Ionicons 
+              name={showModeSelector ? "chevron-up" : "chevron-down"} 
+              size={16} 
+                              color="#FFB000" // Duson Golden Yellow 
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={saveJournalEntry}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+          onPress={saveJournalEntry}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Mode Selector */}
-      {renderModeSelector()}
+      {/* Collapsible Mode Selector */}
+      <Animated.View style={[styles.modeSelectorContainer, { height: modeSelectorHeight }]}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.modeSelectorContent}
+        >
+          {assistanceModes.map((mode) => (
+            <TouchableOpacity
+              key={mode.key}
+              style={[
+                styles.modeCard,
+                selectedMode === mode.key && { borderColor: mode.color },
+              ]}
+              onPress={() => handleModeChange(mode.key)}
+            >
+              <Text style={styles.modeIcon}>{mode.icon}</Text>
+              <Text style={styles.modeTitle}>{mode.title}</Text>
+              <Text style={styles.modeDescription}>{mode.description}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
 
-      {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Writing Area */}
-        <View style={[styles.writingArea, showAIPanel && styles.writingAreaWithPanel]}>
+      {/* Main Chat Area */}
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.chatArea}
+        contentContainerStyle={styles.chatContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {session.messages.length === 0 && selectedMode === 'solo' && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              Start writing your thoughts...
+            </Text>
+          </View>
+        )}
+
+        {session.messages.map((message, index) => renderMessage(message, index))}
+
+        {aiThinking && (
+          <View style={[styles.messageContainer, styles.aiMessageContainer]}>
+            <View style={styles.aiAvatar}>
+                              <ActivityIndicator size="small" color="#FFB000" /> {/* Duson Golden Yellow */}
+            </View>
+            <View style={[styles.messageBubble, styles.aiBubble]}>
+              <Text style={styles.thinkingText}>Thinking...</Text>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Input Area */}
+      <View style={styles.inputArea}>
+        <View style={styles.inputContainer}>
           <TextInput
-            ref={textInputRef}
-            style={styles.journalInput}
-            value={journalContent}
-            onChangeText={setJournalContent}
-            placeholder="Start writing your thoughts..."
-            placeholderTextColor="#6b7280"
+            style={styles.input}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder={selectedMode === 'solo' ? "Write your journal entry..." : "Write your thoughts or ask the AI..."}
+                          placeholderTextColor="#5A4E41" // Duson dark beige-gray
             multiline
-            textAlignVertical="top"
-            autoFocus
+            maxLength={2000}
           />
+          
+          <TouchableOpacity
+            style={[styles.sendButton, (!inputText.trim() || aiThinking) && styles.sendButtonDisabled]}
+            onPress={sendMessage}
+            disabled={!inputText.trim() || aiThinking}
+          >
+            <Ionicons name="send" size={20} color="#ffffff" />
+          </TouchableOpacity>
         </View>
 
-        {/* AI Panel */}
-        {renderAIPanel()}
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        {!showAIPanel && selectedMode !== 'solo' && (
-          <TouchableOpacity
-            style={styles.showAIButton}
-            onPress={() => setShowAIPanel(true)}
-          >
-            <Text style={styles.showAIButtonText}>
-              {assistanceModes.find(mode => mode.key === selectedMode)?.icon} Show AI Assistant
-            </Text>
-          </TouchableOpacity>
-        )}
-        
+        {/* Stats */}
         <View style={styles.stats}>
-          <Text style={styles.statText}>{session.wordCount} words</Text>
-          <Text style={styles.statText}>{session.duration} min</Text>
-          <Text style={styles.statText}>{selectedMode}</Text>
+          <Text style={styles.statText}>
+            <Ionicons name="document-text-outline" size={12} /> {session.wordCount} words
+          </Text>
+          <Text style={styles.statText}>
+            <Ionicons name="time-outline" size={12} /> {session.duration} min
+          </Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -431,218 +477,226 @@ export default function JournalingScreen({ navigation }: JournalingScreenProps) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: '#2D2C2E', // Dark charcoal background
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
-  backButton: {},
-  backButtonText: {
-    fontSize: 18,
-    color: '#8b5cf6',
-    fontWeight: '600',
+  backButton: {
+    padding: 8,
   },
   headerContent: {
     flex: 1,
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     marginBottom: 4,
   },
-  subtitle: {
+  modeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3A3839', // Light charcoal surface
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
+  },
+  modeButtonText: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
+    marginRight: 4,
   },
   saveButton: {
-    backgroundColor: '#8b5cf6',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#FD1F4A', // Crimson background
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: 'rgba(250, 245, 230, 0.3)', // Muted cream when disabled
   },
   saveButtonText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#FAF5E6', // Cream text
     fontWeight: '600',
   },
-  modeSelector: {
+  modeSelectorContainer: {
+    overflow: 'hidden',
+    backgroundColor: '#2D2C2E', // Dark charcoal background
+  },
+  modeSelectorContent: {
     paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  modeSelectorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 12,
-  },
-  modesContainer: {
-    flexDirection: 'row',
+    paddingVertical: 10,
   },
   modeCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal surface
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginRight: 12,
-    width: 140,
+    width: 120,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#374151',
+    borderWidth: 2,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
   modeIcon: {
     fontSize: 24,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   modeTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
-    textAlign: 'center',
+    color: '#FAF5E6', // Cream text
+    marginBottom: 2,
   },
   modeDescription: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: 10,
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
     textAlign: 'center',
-    lineHeight: 16,
   },
-  mainContent: {
+  chatArea: {
     flex: 1,
-    flexDirection: 'row',
   },
-  writingArea: {
-    flex: 1,
-    marginHorizontal: 20,
-  },
-  writingAreaWithPanel: {
-    flex: 0.6,
-    marginRight: 10,
-  },
-  journalInput: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 16,
+  chatContent: {
     padding: 20,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  emptyStateText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: 'rgba(250, 245, 230, 0.6)', // Muted cream
+    fontStyle: 'italic',
+  },
+  messageContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  userMessageContainer: {
+    justifyContent: 'flex-end',
+  },
+  aiMessageContainer: {
+    justifyContent: 'flex-start',
+  },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3A3839', // Light charcoal surface
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
+  },
+  aiAvatarText: {
+    fontSize: 16,
+  },
+  messageBubble: {
+    maxWidth: '75%',
+    borderRadius: 20,
+    padding: 16,
+  },
+  userBubble: {
+    backgroundColor: '#FD1F4A', // Crimson background for user messages
+    borderBottomRightRadius: 4,
+  },
+  aiBubble: {
+    backgroundColor: '#3A3839', // Light charcoal surface for AI messages
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
+  },
+  messageText: {
+    fontSize: 16,
     lineHeight: 24,
   },
-  aiPanel: {
-    flex: 0.4,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 16,
-    marginRight: 20,
-    marginLeft: 10,
+  userText: {
+    color: '#FAF5E6', // Cream text for user messages
   },
-  aiHeader: {
+  aiText: {
+    color: '#FAF5E6', // Cream text for AI messages
+  },
+  journalIndicator: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(253, 31, 74, 0.3)', // Crimson border with opacity
   },
-  aiTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  hideButton: {
-    fontSize: 14,
-    color: '#8b5cf6',
-  },
-  aiConversation: {
-    flex: 1,
-    padding: 16,
-  },
-  aiMessage: {
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 12,
-    maxWidth: '85%',
-  },
-  userMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#8b5cf6',
-  },
-  assistantMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#374151',
-  },
-  aiMessageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  userMessageText: {
-    color: '#ffffff',
-  },
-  assistantMessageText: {
-    color: '#d1d5db',
+  journalIndicatorText: {
+    fontSize: 11,
+    color: '#FD1F4A', // Crimson accent
+    marginLeft: 4,
   },
   thinkingText: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Crimson accent
     fontStyle: 'italic',
-    marginLeft: 8,
   },
-  aiInputContainer: {
-    flexDirection: 'row',
-    padding: 16,
+  inputArea: {
+    backgroundColor: '#2D2C2E', // Dark charcoal background
     borderTopWidth: 1,
-    borderTopColor: '#374151',
+    borderTopColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
   },
-  aiInput: {
-    flex: 1,
-    backgroundColor: '#0f1419',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#ffffff',
-    maxHeight: 80,
-    marginRight: 8,
-  },
-  sendButton: {
-    backgroundColor: '#8b5cf6',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#4b5563',
-  },
-  sendButtonText: {
-    fontSize: 14,
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 20,
+  inputContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  showAIButton: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
+    alignItems: 'flex-end',
+    backgroundColor: '#3A3839', // Light charcoal surface
+    borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity
   },
-  showAIButtonText: {
-    fontSize: 14,
-    color: '#d1d5db',
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FAF5E6', // Cream text
+    maxHeight: 120,
+    minHeight: 40,
+    paddingVertical: 8,
+  },
+  sendButton: {
+    marginLeft: 12,
+    backgroundColor: '#FD1F4A', // Crimson background
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: 'rgba(250, 245, 230, 0.3)', // Muted cream when disabled
   },
   stats: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 8,
   },
   statText: {
     fontSize: 12,
-    color: '#9ca3af',
-    marginLeft: 16,
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with opacity
+    marginHorizontal: 12,
   },
 });

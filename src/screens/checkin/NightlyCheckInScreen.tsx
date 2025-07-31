@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -70,7 +70,7 @@ function ListInput({ title, items, onItemsChange, placeholder, maxItems = 3 }: L
             value={currentItem}
             onChangeText={setCurrentItem}
             placeholder={`${placeholder} (${items.length + 1}/${maxItems})`}
-            placeholderTextColor="#6b7280"
+            placeholderTextColor="#5A4E41" // Duson dark beige-gray
             onSubmitEditing={addItem}
             returnKeyType="done"
           />
@@ -102,12 +102,42 @@ export default function NightlyCheckInScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(true);
+  const [alreadyCompletedToday, setAlreadyCompletedToday] = useState(false);
   const [sessionStartTime] = useState(new Date());
   const [savedResult, setSavedResult] = useState<{
     checkInId: string;
     memoryId: string;
     hasReflection: boolean;
   } | null>(null);
+
+  // Check if user has already completed nightly check-in today
+  useEffect(() => {
+    const checkExistingCheckIn = async () => {
+      try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+          setIsCheckingExisting(false);
+          return;
+        }
+
+        const hasCompleted = await nightlyCheckInService.hasCompletedTodayNightlyCheckIn(currentUserId);
+        if (hasCompleted) {
+          setAlreadyCompletedToday(true);
+          // Show a completed state without allowing form submission
+        }
+      } catch (error) {
+        console.error('Error checking existing nightly check-in:', error);
+        // If there's an error checking, allow the user to proceed
+        // The server-side validation will catch any duplicates
+      }
+      setIsCheckingExisting(false);
+    };
+
+    if (!authLoading) {
+      checkExistingCheckIn();
+    }
+  }, [getCurrentUserId, authLoading]);
 
   const questions = [
     {
@@ -179,6 +209,11 @@ export default function NightlyCheckInScreen() {
   };
 
   const handleSubmit = async () => {
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       // Get current user ID from auth
@@ -228,16 +263,58 @@ export default function NightlyCheckInScreen() {
         errorMessage,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Retry', onPress: handleSubmit }
+          { 
+            text: 'Retry', 
+            onPress: () => {
+              // Allow retry by resetting submission state
+              setIsSubmitting(false);
+              handleSubmit();
+            }
+          }
         ]
       );
+    } finally {
+      // Always reset submission state unless we successfully completed
+      if (!isCompleted) {
+        setIsSubmitting(false);
+      }
     }
-    setIsSubmitting(false);
   };
 
   const getProgress = () => {
     return ((currentStep + 1) / questions.length) * 100;
   };
+
+  // Loading state while checking for existing check-in
+  if (authLoading || isCheckingExisting) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+        <Text style={styles.loadingText}>Checking your nightly check-in status...</Text>
+      </View>
+    );
+  }
+
+  // Already completed state - prevent duplicate submissions
+  if (alreadyCompletedToday) {
+    return (
+      <View style={styles.completedContainer}>
+        <Text style={styles.completedTitle}>🌙 Nightly Check-in Already Complete!</Text>
+        <Text style={styles.completedSubtitle}>
+          You've already completed your nightly check-in for today.
+        </Text>
+        <Text style={styles.completedMessage}>
+          Each day allows only one nightly check-in to maintain the integrity of your daily reflection practice. Come back tomorrow for your next check-in!
+        </Text>
+        <TouchableOpacity
+          style={styles.doneButton}
+          onPress={() => {/* Navigate back to main screen */}}
+        >
+          <Text style={styles.doneButtonText}>Good Night!</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Completed state
   if (isCompleted) {
@@ -305,7 +382,7 @@ export default function NightlyCheckInScreen() {
               value={responses[currentQuestion.key] as string}
               onChangeText={handleTextChange}
               placeholder={currentQuestion.placeholder}
-              placeholderTextColor="#6b7280"
+              placeholderTextColor="#5A4E41" // Duson dark beige-gray
               multiline
               textAlignVertical="top"
               autoFocus
@@ -580,5 +657,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f0f23',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#8b5cf6',
+    fontSize: 16,
   },
 });

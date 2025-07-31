@@ -11,7 +11,8 @@
       "Bash(npm install:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(npm run:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm add:*)"
     ],
     "deny": []
   }

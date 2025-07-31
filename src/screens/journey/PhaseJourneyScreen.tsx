@@ -289,11 +289,11 @@ export default function PhaseJourneyScreen({ navigation }: PhaseJourneyScreenPro
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#FAF5E6', // Duson Light Beige
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#FAF5E6', // Duson Light Beige
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -38,6 +38,14 @@ export const nightlyCheckInService = {
     try {
       const date = new Date().toISOString().split('T')[0];
       
+      // First, check if a nightly check-in already exists for today
+      const existingCheckIn = await nightlyCheckInService.getNightlyCheckIn(userId, date);
+      
+      if (existingCheckIn) {
+        // If a check-in already exists, throw a user-friendly error
+        throw new Error('You have already completed your nightly check-in for today. Each day only allows one nightly check-in.');
+      }
+      
       // Get morning check-in for comparison
       const morningCheckIn = await morningCheckInService.getMorningCheckIn(userId, date);
 
@@ -63,7 +71,7 @@ export const nightlyCheckInService = {
         nightlyCheckIn.great_day_reflection = JSON.stringify(morningReflection);
       }
 
-      // Save to database
+      // Save to database with proper error handling
       const { error: saveError } = await supabase
         .from('nightly_check_ins')
         .insert(nightlyCheckIn);
@@ -74,6 +82,11 @@ export const nightlyCheckInService = {
         // Handle specific constraint violations with user-friendly messages
         if (saveError.code === '23514' && saveError.message.includes('duration_minutes')) {
           throw new Error('Invalid session duration. Please try again.');
+        }
+        
+        // Handle duplicate key constraint violations as a fallback
+        if (saveError.code === '23505' && saveError.message.includes('nightly_check_ins_user_id_date_key')) {
+          throw new Error('You have already completed your nightly check-in for today. Each day only allows one nightly check-in.');
         }
         
         throw new Error(`Failed to save nightly check-in: ${saveError.message}`);
