@@ -428,56 +428,56 @@ export default function CheckInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Main Duson Dark Charcoal background (was #0f0f23)
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Main Duson Dark Charcoal background (was #0f0f23)
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     textAlign: 'center',
   },
   completedContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#2D2C2E', // Main Duson Dark Charcoal background (was #0f0f23)
     padding: 40,
   },
   completedTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Duson Cream for primary text (was #ffffff)
     textAlign: 'center',
     marginBottom: 16,
   },
   completedSubtitle: {
     fontSize: 16,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 22,
   },
   completedMessage: {
     fontSize: 14,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with 80% opacity (was #d1d5db)
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 32,
   },
   doneButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
   },
   doneButtonText: {
-    color: '#ffffff',
+    color: '#FAF5E6', // Duson Cream (was #ffffff)
     fontSize: 16,
     fontWeight: '600',
   },
@@ -493,12 +493,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#FAF5E6', // Duson Cream for primary text (was #ffffff)
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -507,37 +507,37 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#374151',
+    backgroundColor: 'rgba(250, 245, 230, 0.2)', // Cream border with opacity (was #374151)
     borderRadius: 2,
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     borderRadius: 2,
   },
   progressText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: 'rgba(250, 245, 230, 0.6)', // Cream with 60% opacity (was #6b7280)
     textAlign: 'center',
   },
   memoryContainer: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal for elevated surfaces (was #1a1a2e)
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
     borderLeftWidth: 3,
-    borderLeftColor: '#a855f7',
+    borderLeftColor: '#FD1F4A', // Main Duson Crimson (was #a855f7)
   },
   memoryTitle: {
     fontSize: 14,
-    color: '#a855f7',
+    color: '#FD1F4A', // Main Duson Crimson (was #a855f7)
     fontWeight: '600',
     marginBottom: 8,
   },
   memoryText: {
     fontSize: 13,
-    color: '#d1d5db',
+    color: 'rgba(250, 245, 230, 0.8)', // Cream with 80% opacity (was #d1d5db)
     lineHeight: 18,
     marginBottom: 4,
     fontStyle: 'italic',
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   nextButton: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   nextButtonText: {
-    color: '#ffffff',
+    color: '#FAF5E6', // Duson Cream (was #ffffff)
     fontSize: 16,
     fontWeight: '600',
   },
@@ -563,14 +563,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#3A3839', // Light charcoal for elevated surfaces (was #1a1a2e)
     borderRadius: 12,
     marginBottom: 16,
   },
   processingText: {
     marginLeft: 12,
     fontSize: 14,
-    color: '#8b5cf6',
+    color: '#FD1F4A', // Main Duson Crimson (was #8b5cf6)
     fontStyle: 'italic',
   },
 });

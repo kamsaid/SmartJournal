@@ -363,7 +363,7 @@ export function SkeletonLoader({
     <View
       style={[
         {
-          width: typeof width === 'string' ? width : `${width}px`,
+          width: width,
           height,
           backgroundColor: theme.colors.dark.border,
           borderRadius,

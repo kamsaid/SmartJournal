@@ -1,26 +1,33 @@
 // AnimatedTabBar - Premium floating tab bar with micro-interactions
-import React, { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  interpolate,
-  runOnJS,
-} from 'react-native-reanimated';
+import React from 'react';
+import { View, Pressable, Text, StyleSheet, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { HapticManager } from '@/utils/haptics';
-import { theme, SPRING_CONFIGS } from '@/design-system';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming,
+  Easing 
+} from 'react-native-reanimated';
+// Import Lucide icons as specified
+import { 
+  CheckSquare, 
+  CalendarClock, 
+  NotebookPen, 
+  BarChart3, 
+  Settings 
+} from 'lucide-react-native';
+import { theme } from '@/design-system';
 
+// Tab item interface with proper typing
 interface TabItem {
   key: string;
   title: string;
-  icon: string;
-  isActive: boolean;
+  icon: string; // Keep for backward compatibility but will use iconComponent
+  iconComponent: React.ComponentType<any>; // Lucide icon component
+  isActive?: boolean;
 }
 
+// Component props interface
 interface AnimatedTabBarProps {
   tabs: TabItem[];
   onTabPress: (key: string) => void;
@@ -28,324 +35,211 @@ interface AnimatedTabBarProps {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
-const TAB_BAR_HEIGHT = 80;
-const TAB_BAR_MARGIN = 20;
-const TAB_WIDTH = (screenWidth - (TAB_BAR_MARGIN * 2)) / 5;
+const TAB_BAR_MARGIN = 16; // Reduced margin for cleaner look
 
+// Clean-Minimal Tab Bar Component
 export default function AnimatedTabBar({
   tabs,
   onTabPress,
   activeTabKey,
 }: AnimatedTabBarProps) {
-  // Early return if tabs is undefined or empty to prevent errors
+  
+  // Early return for invalid props
   if (!tabs || !Array.isArray(tabs) || tabs.length === 0) {
     return null;
   }
 
   const insets = useSafeAreaInsets();
-  
-  // Animation values - all at top level
-  const tabBarY = useSharedValue(100); // Start hidden
-  const activeIndicatorX = useSharedValue(0);
-  const activeIndicatorScale = useSharedValue(0);
-  const glowIntensity = useSharedValue(0);
 
-  // Create animation values for each tab at the top level
-  // Using a fixed number of tabs to avoid hook order changes
-  const tab0Scale = useSharedValue(1);
-  const tab1Scale = useSharedValue(1);
-  const tab2Scale = useSharedValue(1);
-  const tab3Scale = useSharedValue(1);
-  const tab4Scale = useSharedValue(1);
-  
-  const tab0Opacity = useSharedValue(0.6);
-  const tab1Opacity = useSharedValue(0.6);
-  const tab2Opacity = useSharedValue(0.6);
-  const tab3Opacity = useSharedValue(0.6);
-  const tab4Opacity = useSharedValue(0.6);
+  // Animation value for color transitions
+  const colorTransition = useSharedValue(0);
 
-  // Create arrays of shared values for easier access
-  const tabScales = useMemo(() => [
-    tab0Scale, tab1Scale, tab2Scale, tab3Scale, tab4Scale
-  ], [tab0Scale, tab1Scale, tab2Scale, tab3Scale, tab4Scale]);
-
-  const tabOpacities = useMemo(() => [
-    tab0Opacity, tab1Opacity, tab2Opacity, tab3Opacity, tab4Opacity
-  ], [tab0Opacity, tab1Opacity, tab2Opacity, tab3Opacity, tab4Opacity]);
-
-  // Create animated styles for each tab at the top level
-  const tab0AnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tab0Scale.value }],
-    opacity: tab0Opacity.value,
-  }));
-
-  const tab1AnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tab1Scale.value }],
-    opacity: tab1Opacity.value,
-  }));
-
-  const tab2AnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tab2Scale.value }],
-    opacity: tab2Opacity.value,
-  }));
-
-  const tab3AnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tab3Scale.value }],
-    opacity: tab3Opacity.value,
-  }));
-
-  const tab4AnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: tab4Scale.value }],
-    opacity: tab4Opacity.value,
-  }));
-
-  // Array of animated styles for easier access
-  const tabAnimatedStyles = useMemo(() => [
-    tab0AnimatedStyle, tab1AnimatedStyle, tab2AnimatedStyle, tab3AnimatedStyle, tab4AnimatedStyle
-  ], [tab0AnimatedStyle, tab1AnimatedStyle, tab2AnimatedStyle, tab3AnimatedStyle, tab4AnimatedStyle]);
-
-  // Initialize animations
-  useEffect(() => {
-    // Slide up tab bar
-    tabBarY.value = withSpring(0, SPRING_CONFIGS.bouncy);
+  // Handle tab press with haptic feedback potential
+  const handleTabPress = React.useCallback((tabKey: string) => {
+    // Trigger smooth color transition
+    colorTransition.value = withTiming(1, {
+      duration: 150,
+      easing: Easing.out(Easing.ease),
+    });
     
-    // Initialize active indicator
-    const activeIndex = tabs.findIndex(tab => tab.key === activeTabKey);
-    if (activeIndex !== -1) {
-      activeIndicatorX.value = activeIndex * TAB_WIDTH;
-      activeIndicatorScale.value = withSpring(1, SPRING_CONFIGS.gentle);
-      if (tabOpacities[activeIndex]) {
-        tabOpacities[activeIndex].value = withTiming(1);
-      }
-    }
-  }, []);
+    onTabPress(tabKey);
+  }, [onTabPress, colorTransition]);
 
-  // Update active tab animations
-  useEffect(() => {
-    const activeIndex = tabs.findIndex(tab => tab.key === activeTabKey);
-    
-    if (activeIndex !== -1) {
-      // Move active indicator
-      activeIndicatorX.value = withSpring(
-        activeIndex * TAB_WIDTH,
-        SPRING_CONFIGS.gentle
-      );
-      
-      // Scale and opacity animations for all tabs
-      tabs.forEach((_, index) => {
-        if (index < tabScales.length && index < tabOpacities.length) {
-          if (index === activeIndex) {
-            tabScales[index].value = withSpring(1.1, SPRING_CONFIGS.bouncy);
-            tabOpacities[index].value = withTiming(1);
-          } else {
-            tabScales[index].value = withSpring(1, SPRING_CONFIGS.gentle);
-            tabOpacities[index].value = withTiming(0.6);
-          }
-        }
-      });
-      
-      // Glow effect
-      glowIntensity.value = withTiming(1, { duration: 200 }, () => {
-        glowIntensity.value = withTiming(0, { duration: 300 });
-      });
-    }
-  }, [activeTabKey, tabs]);
-
-  // Haptic feedback
-  const triggerHaptic = async () => {
-    await HapticManager.trigger('medium');
-  };
-
-  // Handle tab press
-  const handleTabPress = async (tabKey: string) => {
-    if (tabKey !== activeTabKey) {
-      await triggerHaptic();
-      onTabPress(tabKey);
-    }
-  };
-
-  // Animated styles
-  const tabBarAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: tabBarY.value }],
-  }));
-
-  const activeIndicatorAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: activeIndicatorX.value },
-      { scale: activeIndicatorScale.value },
-    ],
-  }));
-
-  const glowAnimatedStyle = useAnimatedStyle(() => {
-    const glowOpacity = interpolate(glowIntensity.value, [0, 1], [0, 0.6]);
-    const glowRadius = interpolate(glowIntensity.value, [0, 1], [0, 20]);
-    
-    return {
-      shadowOpacity: glowOpacity,
-      shadowRadius: glowRadius,
-      elevation: 10 * glowIntensity.value,
-    };
-  });
-
+  // Render individual tab with Clean-Minimal styling
   const renderTab = (tab: TabItem, index: number) => {
-    // Only render if we have the animated style for this index
-    if (index >= tabAnimatedStyles.length) {
-      return null;
-    }
-
-    const tabAnimatedStyle = tabAnimatedStyles[index];
+    const isActive = tab.key === activeTabKey;
+    const IconComponent = tab.iconComponent;
 
     return (
-      <TouchableOpacity
+      <Pressable
         key={tab.key}
         style={styles.tab}
         onPress={() => handleTabPress(tab.key)}
-        activeOpacity={0.8}
+        // Accessibility features as specified
+        accessibilityRole="button"
+        accessibilityLabel={tab.title}
+        accessibilityState={{ selected: isActive }}
+        // Native press feedback
+        android_ripple={{ 
+          color: theme.colors.crimson[500] + '20', 
+          borderless: true 
+        }}
       >
-        <Animated.View style={[styles.tabContent, tabAnimatedStyle]}>
-          <Text style={styles.tabIcon}>{tab.icon}</Text>
+        <Animated.View style={[
+          styles.tabContent,
+          isActive && styles.activeTabContent
+        ]}>
+          {/* Icon with proper theming */}
+          <IconComponent
+            size={22}
+            color={isActive 
+              ? theme.colors.crimson[500] // Active: accent-600 equivalent 
+              : theme.colors.dark.text.tertiary // Inactive: onSurface/60 equivalent
+            }
+            strokeWidth={isActive ? 2.5 : 2} // Slightly bolder when active
+          />
+          
+          {/* Tab label with color states */}
           <Text style={[
             styles.tabTitle,
-            tab.key === activeTabKey && styles.activeTabTitle
+            {
+              color: isActive 
+                ? theme.colors.crimson[500] // Active: text-accent-600
+                : theme.colors.dark.text.tertiary // Inactive: text-onSurface/60
+            }
           ]}>
             {tab.title}
           </Text>
+
+          {/* Active state border indicator */}
+          {isActive && (
+            <Animated.View style={[
+              styles.activeIndicator,
+              {
+                backgroundColor: theme.colors.crimson[500], // border-accent-600
+              }
+            ]} />
+          )}
         </Animated.View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        tabBarAnimatedStyle,
-        glowAnimatedStyle,
-        { paddingBottom: insets.bottom + 10 }
-      ]}
-    >
-      {/* Glassmorphic Background */}
-      <LinearGradient
-        colors={[
-          'rgba(26, 26, 46, 0.9)',
-          'rgba(22, 33, 62, 0.95)',
-        ]}
-        style={styles.background}
-      >
-        {/* Active Indicator */}
-        <Animated.View style={[styles.activeIndicator, activeIndicatorAnimatedStyle]}>
-          <LinearGradient
-            colors={theme.colors.gradients.cosmic}
-            style={styles.indicatorGradient}
-          />
-        </Animated.View>
-
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          {tabs.slice(0, 5).map(renderTab)} {/* Limit to 5 tabs to match our fixed hooks */}
-        </View>
-      </LinearGradient>
-    </Animated.View>
+    <View style={[
+      styles.container,
+      { 
+        marginBottom: insets.bottom + 8,
+        // Clean-Minimal container styling as specified
+        backgroundColor: theme.colors.dark.surface + 'CC', // bg-surface/80 equivalent
+      }
+    ]}>
+      {/* Tab container with proper spacing */}
+      <View style={styles.tabsContainer}>
+        {tabs.slice(0, 5).map(renderTab)}
+      </View>
+    </View>
   );
 }
 
+// Clean-Minimal styles following specifications
 const styles = StyleSheet.create({
   container: {
+    // Clean-Minimal container: flex flex-row justify-around py-2 px-4 bg-surface/80 backdrop-blur rounded-full shadow-md
     position: 'absolute',
     bottom: 0,
     left: TAB_BAR_MARGIN,
     right: TAB_BAR_MARGIN,
-    height: TAB_BAR_HEIGHT,
-    borderRadius: theme.borderRadius.xl,
-    shadowColor: theme.colors.primary[500],
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  background: {
-    flex: 1,
-    borderRadius: theme.borderRadius.xl,
+    minHeight: 56, // Ensure min-height ≥ 56 px (touch target)
+    borderRadius: 28, // rounded-full equivalent
+    paddingVertical: 8, // py-2 equivalent
+    paddingHorizontal: 16, // px-4 equivalent
+    // Shadow equivalent to shadow-md
+    shadowColor: theme.colors.charcoal[800],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 8,
+    // Backdrop blur effect simulation
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
-    overflow: 'hidden',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: TAB_WIDTH - 16,
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  indicatorGradient: {
-    flex: 1,
-    borderRadius: 2,
+    borderColor: theme.colors.glass.border,
   },
   tabsContainer: {
+    // justify-around equivalent
     flex: 1,
     flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 8,
   },
   tab: {
+    // Touch target optimization
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minHeight: 48, // Minimum touch target
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    paddingVertical: 4,
   },
-  tabIcon: {
-    fontSize: 20,
-    marginBottom: 4,
+  activeTabContent: {
+    // Active tab gets slightly more spacing
+    paddingVertical: 6,
   },
   tabTitle: {
-    fontSize: theme.typography.fontSizes.xs,
-    fontWeight: theme.typography.fontWeights.medium,
-    color: theme.colors.dark.text.tertiary,
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 4,
     textAlign: 'center',
+    // Transition equivalent: transition border-color, color 150ms ease-out
+    // (React Native handles this through re-renders)
   },
-  activeTabTitle: {
-    color: theme.colors.primary[300],
-    fontWeight: theme.typography.fontWeights.semibold,
+  activeIndicator: {
+    // Active state: border-b-2 border-accent-600
+    position: 'absolute',
+    bottom: -2,
+    left: '50%',
+    transform: [{ translateX: -12 }], // Center the 24px width indicator
+    width: 24,
+    height: 2,
+    borderRadius: 1,
   },
 });
 
-// Tab configuration - base config without isActive (added dynamically)
-interface TabConfig {
-  key: string;
-  title: string;
-  icon: string;
-}
-
-export const TAB_CONFIG: TabConfig[] = [
+// Updated TAB_CONFIG with Lucide icon components
+export const TAB_CONFIG: TabItem[] = [
   {
     key: 'CheckInFlow',
     title: 'Check In',
-    icon: '🎯',
+    icon: '🎯', // Keep for backward compatibility
+    iconComponent: CheckSquare,
   },
   {
     key: 'Calendar',
     title: 'Calendar',
     icon: '📅',
+    iconComponent: CalendarClock,
   },
   {
     key: 'Journal',
     title: 'Journal',
     icon: '📝',
+    iconComponent: NotebookPen,
   },
   {
     key: 'History',
     title: 'History',
     icon: '📊',
+    iconComponent: BarChart3,
   },
   {
     key: 'Settings',
     title: 'Settings',
     icon: '⚙️',
+    iconComponent: Settings,
   },
 ];
