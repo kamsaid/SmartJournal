@@ -1,5 +1,5 @@
 // NightlyCheckInService.ts - Handle nightly check-in responses and reflection analysis
-import { NightlyCheckIn, MorningCheckIn } from '@/types/database';
+import { NightlyCheckIn, MorningCheckIn, GreatDayReflection } from '@/types/database';
 import { memoryService } from '../memory/MemoryService';
 import { morningCheckInService } from './MorningCheckInService';
 import { aiOrchestrator } from '../openai/aiOrchestrator';
@@ -68,7 +68,8 @@ export const nightlyCheckInService = {
       let morningReflection: GreatDayReflection | undefined;
       if (morningCheckIn) {
         morningReflection = await analyzeGreatDayAlignment(morningCheckIn, nightlyCheckIn);
-        nightlyCheckIn.great_day_reflection = JSON.stringify(morningReflection);
+        // Store as JSON object (JSONB column). Do not stringify to avoid double-encoding.
+        nightlyCheckIn.great_day_reflection = morningReflection;
       }
 
       // Save to database with proper error handling
@@ -189,15 +190,8 @@ export const nightlyCheckInService = {
 
       // Extract alignment scores
       const alignmentScores = pairs.map(pair => {
-        if (pair.nightly.great_day_reflection) {
-          try {
-            const reflection = JSON.parse(pair.nightly.great_day_reflection) as GreatDayReflection;
-            return reflection.visionAlignment;
-          } catch {
-            return 0.5; // Default middle score
-          }
-        }
-        return 0.5;
+        const reflection = pair.nightly.great_day_reflection as GreatDayReflection | undefined;
+        return typeof reflection?.visionAlignment === 'number' ? reflection.visionAlignment : 0.5;
       });
 
       // Extract common patterns
@@ -310,7 +304,17 @@ Return JSON with:
       prompt
     );
 
-    const reflection = JSON.parse(response.content);
+    // Parse response content defensively in case the model returns formatted text
+    let reflection: any = {};
+    try {
+      const cleaned = (response.content || '')
+        .replace(/```json\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
+      reflection = JSON.parse(cleaned);
+    } catch {
+      reflection = {};
+    }
     
     // Ensure proper structure and defaults
     return {
@@ -373,18 +377,12 @@ async function generateAlignmentInsights(
   // Generate insights about vision-reality alignment patterns
   const insights: string[] = [];
 
-  if (pairs.length >= 3) {
-    const avgAlignment = pairs.reduce((sum, pair) => {
-      if (pair.nightly.great_day_reflection) {
-        try {
-          const reflection = JSON.parse(pair.nightly.great_day_reflection) as GreatDayReflection;
-          return sum + reflection.visionAlignment;
-        } catch {
-          return sum + 0.5;
-        }
-      }
-      return sum + 0.5;
-    }, 0) / pairs.length;
+    if (pairs.length >= 3) {
+      const avgAlignment = pairs.reduce((sum, pair) => {
+        const reflection = pair.nightly.great_day_reflection as GreatDayReflection | undefined;
+        const score = typeof reflection?.visionAlignment === 'number' ? reflection.visionAlignment : 0.5;
+        return sum + score;
+      }, 0) / pairs.length;
 
     if (avgAlignment > 0.7) {
       insights.push("You're consistently good at turning your morning visions into reality");

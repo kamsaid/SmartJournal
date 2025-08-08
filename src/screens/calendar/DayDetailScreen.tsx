@@ -40,6 +40,7 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
   const [dayData, setDayData] = useState<DayData>({ journalEntries: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedEntries, setExpandedEntries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Don't load day data if auth is still loading
@@ -154,7 +155,11 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
 
         <View style={styles.responseItem}>
           <Text style={styles.questionText}>Great Day Vision</Text>
-          <Text style={styles.responseText}>{morningCheckIn.great_day_vision}</Text>
+          <Text style={styles.responseText}>
+            {Array.isArray(morningCheckIn.great_day_vision)
+              ? morningCheckIn.great_day_vision.join(', ')
+              : String(morningCheckIn.great_day_vision)}
+          </Text>
         </View>
 
         <View style={styles.responseItem}>
@@ -210,38 +215,35 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
           <View style={styles.reflectionCard}>
             <Text style={styles.reflectionTitle}>🤖 AI Vision Alignment</Text>
             {(() => {
-              try {
-                const reflection = JSON.parse(nightlyCheckIn.great_day_reflection);
-                return (
-                  <View>
-                    <View style={styles.alignmentScore}>
-                      <Text style={styles.alignmentText}>
-                        Alignment Score: {Math.round(reflection.visionAlignment * 100)}%
-                      </Text>
-                    </View>
-                    
-                    {reflection.alignedElements?.length > 0 && (
-                      <View style={styles.insightSection}>
-                        <Text style={styles.insightTitle}>✅ What Aligned</Text>
-                        {reflection.alignedElements.map((element: string, index: number) => (
-                          <Text key={index} style={styles.insightItem}>• {element}</Text>
-                        ))}
-                      </View>
-                    )}
-
-                    {reflection.learnings?.length > 0 && (
-                      <View style={styles.insightSection}>
-                        <Text style={styles.insightTitle}>💡 Key Learnings</Text>
-                        {reflection.learnings.map((learning: string, index: number) => (
-                          <Text key={index} style={styles.insightItem}>• {learning}</Text>
-                        ))}
-                      </View>
-                    )}
+              const reflection = nightlyCheckIn.great_day_reflection as any;
+              const score = typeof reflection?.visionAlignment === 'number' ? reflection.visionAlignment : 0.5;
+              const aligned = Array.isArray(reflection?.alignedElements) ? reflection.alignedElements : [];
+              const learnings = Array.isArray(reflection?.learnings) ? reflection.learnings : [];
+              return (
+                <View>
+                  <View style={styles.alignmentScore}>
+                    <Text style={styles.alignmentText}>
+                      Alignment Score: {Math.round(score * 100)}%
+                    </Text>
                   </View>
-                );
-              } catch {
-                return <Text style={styles.responseText}>Processing reflection...</Text>;
-              }
+                  {aligned.length > 0 && (
+                    <View style={styles.insightSection}>
+                      <Text style={styles.insightTitle}>✅ What Aligned</Text>
+                      {aligned.map((element: string, index: number) => (
+                        <Text key={index} style={styles.insightItem}>• {element}</Text>
+                      ))}
+                    </View>
+                  )}
+                  {learnings.length > 0 && (
+                    <View style={styles.insightSection}>
+                      <Text style={styles.insightTitle}>💡 Key Learnings</Text>
+                      {learnings.map((learning: string, index: number) => (
+                        <Text key={index} style={styles.insightItem}>• {learning}</Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
             })()}
           </View>
         )}
@@ -265,10 +267,11 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
             </View>
             
             <Text style={styles.journalContent}>
-              {entry.content.length > 200 ? 
-                `${entry.content.substring(0, 200)}...` : 
-                entry.content
-              }
+              {expandedEntries[entry.id]
+                ? entry.content
+                : (entry.content.length > 200
+                    ? `${entry.content.substring(0, 200)}...`
+                    : entry.content)}
             </Text>
 
             {entry.patterns_identified.length > 0 && (
@@ -286,9 +289,13 @@ export default function DayDetailScreen({ route, navigation }: DayDetailScreenPr
 
             <TouchableOpacity 
               style={styles.expandButton}
-              onPress={() => navigation.navigate('JournalDetail', { entryId: entry.id })}
+              onPress={() => setExpandedEntries(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}
+              accessibilityRole="button"
+              accessibilityLabel={expandedEntries[entry.id] ? 'Collapse entry' : 'Expand entry'}
             >
-              <Text style={styles.expandButtonText}>Read Full Entry</Text>
+              <Text style={styles.expandButtonText}>
+                {expandedEntries[entry.id] ? 'Show Less' : 'Read Full Entry'}
+              </Text>
             </TouchableOpacity>
           </View>
         ))}

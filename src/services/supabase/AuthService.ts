@@ -24,10 +24,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
 /**
  * Check if user is authenticated
  */
-export const isAuthenticated = async (): Promise<boolean> => {
-  const user = await getCurrentUser();
-  return !!user;
-};
+// Removed unused isAuthenticated export to reduce dead-code
 
 /**
  * Get the current session

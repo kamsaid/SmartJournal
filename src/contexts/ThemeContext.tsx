@@ -9,7 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme as baseTheme, Theme, themes } from '@/design-system';
+import { theme as baseTheme, Theme } from '@/design-system';
 import { HapticManager } from '@/utils/haptics';
 
 // Types
@@ -100,7 +100,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   
   // Animation values
   const transitionProgress = useSharedValue(0);
-  const themeTransition = useSharedValue(0);
+  // Removed unused themeTransition shared value
   
   // Load saved preferences
   useEffect(() => {
@@ -111,11 +111,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     if (themeMode === 'auto') {
       const subscription = Appearance.addChangeListener(({ colorScheme }) => {
-        handleSystemThemeChange(colorScheme);
+        handleSystemThemeChange(colorScheme ?? 'dark');
       });
       
       // Initial system theme
-      handleSystemThemeChange(Appearance.getColorScheme());
+      handleSystemThemeChange(Appearance.getColorScheme() ?? 'dark');
       
       return () => subscription?.remove();
     }
@@ -154,7 +154,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     }
   };
 
-  const handleSystemThemeChange = (systemScheme: 'light' | 'dark' | null) => {
+  const handleSystemThemeChange = (_systemScheme: 'light' | 'dark' | null) => {
     // For now, we only support dark theme, but this is where light theme would be handled
     // The transition animation would happen here
     animateThemeTransition();
@@ -292,26 +292,9 @@ export function ThemeTransitionOverlay({ children }: ThemeTransitionOverlayProps
 }
 
 // Themed component wrapper
-interface ThemedViewProps {
-  children: ReactNode;
-  style?: any;
-}
+// Removed ThemedViewProps (unused) to reduce dead-code
 
-export function ThemedView({ children, style }: ThemedViewProps) {
-  const { currentTheme, transitionProgress } = useTheme();
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: currentTheme.colors.dark.bg,
-    };
-  });
-
-  return (
-    <Animated.View style={[animatedStyle, style]}>
-      {children}
-    </Animated.View>
-  );
-}
+// Removed ThemedView export as it was unused; this reduces surface area and avoids dead-code.
 
 // Theme configuration for settings
 export const THEME_CONFIG = {

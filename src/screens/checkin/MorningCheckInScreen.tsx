@@ -15,10 +15,11 @@ import { MorningCheckIn } from '@/types/database';
 import { generateUUID } from '@/utils/uuid';
 import { morningCheckInService, MorningCheckInSubmission } from '@/services/checkins/MorningCheckInService';
 import { useAuth } from '@/hooks/useAuth';
+import ListQuestion from '@/components/QuestionTypes/ListQuestion';
 
 interface MorningCheckInData {
   thoughts_anxieties: string;
-  great_day_vision: string;
+  great_day_vision: string[]; // Array of up to 3 items
   affirmations: string;
   gratitude: string;
 }
@@ -28,7 +29,7 @@ export default function MorningCheckInScreen() {
   const { getCurrentUserId, loading: authLoading } = useAuth();
   const [responses, setResponses] = useState<MorningCheckInData>({
     thoughts_anxieties: '',
-    great_day_vision: '',
+    great_day_vision: [], // Initialize as empty array
     affirmations: '',
     gratitude: '',
   });
@@ -110,15 +111,21 @@ export default function MorningCheckInScreen() {
 
   const currentQuestion = questions[currentStep];
 
-  const handleResponseChange = (text: string) => {
+  const handleResponseChange = (value: string | string[]) => {
     setResponses(prev => ({
       ...prev,
-      [currentQuestion.key]: text,
+      [currentQuestion.key]: value,
     }));
   };
 
   const isCurrentStepComplete = () => {
-    return responses[currentQuestion.key].trim().length > 0;
+    const response = responses[currentQuestion.key];
+    // For array responses (great_day_vision), check if at least one item exists
+    if (Array.isArray(response)) {
+      return response.length > 0 && response.some(item => item.trim().length > 0);
+    }
+    // For string responses, check if not empty
+    return (response as string).trim().length > 0;
   };
 
   const handleNext = () => {
@@ -308,22 +315,35 @@ export default function MorningCheckInScreen() {
         {/* Current Question */}
         <View style={styles.questionContainer}>
           <Text style={styles.questionTitle}>{currentQuestion.title}</Text>
-          <Text style={styles.questionText}>{currentQuestion.question}</Text>
           
-          <TextInput
-            style={[
-              styles.textInput,
-              { minHeight: currentQuestion.minHeight },
-              currentQuestion.multiline && styles.multilineInput,
-            ]}
-            value={responses[currentQuestion.key]}
-            onChangeText={handleResponseChange}
-            placeholder={currentQuestion.placeholder}
-            placeholderTextColor="rgba(250, 245, 230, 0.5)" // Cream muted for placeholders
-            multiline={currentQuestion.multiline}
-            textAlignVertical="top"
-            autoFocus
-          />
+          {/* Render ListQuestion for great_day_vision, TextInput for others */}
+          {currentQuestion.key === 'great_day_vision' ? (
+            <ListQuestion
+              question={currentQuestion.question}
+              value={responses[currentQuestion.key] as string[]}
+              onValueChange={handleResponseChange}
+              maxItems={3}
+              placeholder="What will make today great?"
+            />
+          ) : (
+            <>
+              <Text style={styles.questionText}>{currentQuestion.question}</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  { minHeight: currentQuestion.minHeight },
+                  currentQuestion.multiline && styles.multilineInput,
+                ]}
+                value={responses[currentQuestion.key] as string}
+                onChangeText={handleResponseChange}
+                placeholder={currentQuestion.placeholder}
+                placeholderTextColor="rgba(250, 245, 230, 0.5)" // Cream muted for placeholders
+                multiline={currentQuestion.multiline}
+                textAlignVertical="top"
+                autoFocus
+              />
+            </>
+          )}
         </View>
 
         {/* Navigation Buttons */}

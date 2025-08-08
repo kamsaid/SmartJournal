@@ -23,7 +23,7 @@ import ChallengeCard from '@/components/ChallengeCard/ChallengeCard';
 
 interface QuestionResponse {
   questionId: string;
-  response: string | number | boolean;
+  response: string | number | boolean | null;
   isComplete: boolean;
 }
 
@@ -92,7 +92,8 @@ export default function CheckInScreen() {
       // Initialize response tracking
       const initialResponses: QuestionResponse[] = selection.questions.map(q => ({
         questionId: q.id,
-        response: q.input_type === 'slider' ? 5 : q.input_type === 'yes_no' ? false : '',
+        // For yes/no questions, initialize as null so the user must make an explicit choice
+        response: q.input_type === 'slider' ? 5 : q.input_type === 'yes_no' ? null : '',
         isComplete: false,
       }));
       

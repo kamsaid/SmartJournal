@@ -7,7 +7,7 @@ import { generateUUID } from '@/utils/uuid';
 
 export interface MorningCheckInSubmission {
   thoughts_anxieties: string;
-  great_day_vision: string;
+  great_day_vision: string[]; // Array of up to 3 items for "What would make today great?"
   affirmations: string;
   gratitude: string;
 }
@@ -169,7 +169,7 @@ export const morningCheckInService = {
 
       // Combine all text for pattern analysis
       const allText = recentCheckIns.map(checkIn => 
-        `${checkIn.thoughts_anxieties} ${checkIn.great_day_vision} ${checkIn.affirmations} ${checkIn.gratitude}`
+        `${checkIn.thoughts_anxieties} ${checkIn.great_day_vision.join(' ')} ${checkIn.affirmations} ${checkIn.gratitude}`
       ).join(' ');
 
       // Use memory service for pattern recognition
@@ -177,7 +177,7 @@ export const morningCheckInService = {
 
       // Extract specific patterns (simplified implementation)
       const gratitudeTexts = recentCheckIns.map(c => c.gratitude).filter(Boolean);
-      const visionTexts = recentCheckIns.map(c => c.great_day_vision).filter(Boolean);
+      const visionTexts = recentCheckIns.flatMap(c => c.great_day_vision).filter(Boolean);
       const anxietyTexts = recentCheckIns.map(c => c.thoughts_anxieties).filter(Boolean);
 
       return {
@@ -203,7 +203,7 @@ export const morningCheckInService = {
 async function storeAsMemory(morningCheckIn: MorningCheckIn): Promise<{ id: string }> {
   try {
     // Combine the most meaningful parts as a memory
-    const memoryContent = `Morning Intentions: ${morningCheckIn.great_day_vision}. 
+    const memoryContent = `Morning Intentions: ${morningCheckIn.great_day_vision.join(', ')}. 
     Affirmations: ${morningCheckIn.affirmations}. 
     Grateful for: ${morningCheckIn.gratitude}.`;
 
@@ -226,7 +226,7 @@ async function generateGreatDayChallenge(morningCheckIn: MorningCheckIn): Promis
     // Create challenge context focused on "great day" vision
     const challengeContext = {
       user: { id: morningCheckIn.user_id, current_phase: 1 } as any, // Simplified for now
-      todayResponses: [morningCheckIn.great_day_vision],
+      todayResponses: morningCheckIn.great_day_vision,
       recentMemories: [],
       patterns: [],
       currentStruggles: extractStruggles(morningCheckIn.thoughts_anxieties),
@@ -257,10 +257,11 @@ async function generateGreatDayChallenge(morningCheckIn: MorningCheckIn): Promis
     console.error('Error generating great day challenge:', error);
     
     // Return fallback challenge
+    const visionText = morningCheckIn.great_day_vision.join(', ');
     return {
       id: generateUUID(),
       user_id: morningCheckIn.user_id,
-      challenge_text: `Take one specific action today that moves you toward your vision: "${morningCheckIn.great_day_vision.slice(0, 50)}..."`,
+      challenge_text: `Take one specific action today that moves you toward your vision: "${visionText.slice(0, 50)}${visionText.length > 50 ? '...' : ''}"`,
       challenge_type: 'action',
       assigned_date: morningCheckIn.date,
       swap_count: 0,
@@ -273,17 +274,17 @@ async function generateGreatDayChallenge(morningCheckIn: MorningCheckIn): Promis
 
 async function customizeGreatDayChallenge(
   baseChallenge: DailyChallenge,
-  greatDayVision: string
+  greatDayVision: string[]
 ): Promise<DailyChallenge> {
   // Customize the challenge text to reference their specific vision
-  const visionKeywords = extractKeywords([greatDayVision]);
+  const visionKeywords = extractKeywords(greatDayVision);
   const primaryKeyword = visionKeywords[0] || 'your goal';
 
   let customizedText = baseChallenge.challenge_text;
   
   // Add vision-specific context to the challenge
-  if (greatDayVision.trim()) {
-    customizedText = `${baseChallenge.challenge_text} Remember: "${greatDayVision.slice(0, 100)}${greatDayVision.length > 100 ? '...' : ''}"`;
+  if (greatDayVision.length > 0) {
+    customizedText = `${baseChallenge.challenge_text} Remember: "${greatDayVision.join(' ').slice(0, 100)}${greatDayVision.join(' ').length > 100 ? '...' : ''}"`;
   }
 
   return {

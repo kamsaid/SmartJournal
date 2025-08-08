@@ -3,7 +3,8 @@
 
 import OpenAI from 'openai';
 import config from '@/constants/config';
-import { UserMemory, DailyCheckIn } from '@/types/database';
+import { UserMemory } from '@/types/database';
+import { supabase } from '../supabase/client';
 import { generateUUID } from '@/utils/uuid';
 
 const openai = new OpenAI({
@@ -386,16 +387,38 @@ function calculateRetrievalConfidence(memories: UserMemory[], context: MemoryCon
   return Math.min(avgImportance + recencyFactor, 1);
 }
 
-// Database interaction placeholders (will implement with Supabase)
+// Database interaction using Supabase
 async function storeMemoryInDatabase(memory: UserMemory): Promise<void> {
-  // TODO: Implement Supabase storage
-  console.log('Storing memory:', memory.id);
+  try {
+    const { error } = await supabase
+      .from('user_memories')
+      .insert(memory);
+    if (error) {
+      console.error('Supabase insert error (user_memories):', error);
+      throw error;
+    }
+  } catch (err) {
+    console.error('Failed to store memory in database:', err);
+    throw err;
+  }
 }
 
 async function getUserMemories(userId: string): Promise<UserMemory[]> {
-  // TODO: Implement Supabase retrieval
-  // For now, return empty array
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from('user_memories')
+      .select('*')
+      .eq('user_id', userId)
+      .order('response_date', { ascending: false });
+    if (error) {
+      console.error('Supabase select error (user_memories):', error);
+      return [];
+    }
+    return (data as UserMemory[]) || [];
+  } catch (err) {
+    console.error('Failed to fetch user memories:', err);
+    return [];
+  }
 }
 
 export default memoryService;

@@ -16,7 +16,7 @@ import CheckInScreen from '../screens/checkin/CheckInScreen';
 import CheckInTypeSelector from '../screens/checkin/CheckInTypeSelector';
 import MorningCheckInScreen from '../screens/checkin/MorningCheckInScreen';
 import NightlyCheckInScreen from '../screens/checkin/NightlyCheckInScreen';
-import HistoryScreen from '../screens/history/HistoryScreen';
+import PlanScreen from '../screens/plan/PlanScreen'; // Replace HistoryScreen with PlanScreen
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import CalendarScreen from '../screens/calendar/CalendarScreen';
 import DayDetailScreen from '../screens/calendar/DayDetailScreen';
@@ -33,7 +33,7 @@ export type MainTabParamList = {
   CheckInFlow: undefined;
   Calendar: undefined;
   Journal: undefined;
-  History: undefined;
+  Plan: undefined; // Replace History with Plan
   Settings: undefined;
 };
 
@@ -190,9 +190,9 @@ function MainTabNavigator() {
         options={{ title: 'Journal' }}
       />
       <Tab.Screen 
-        name="History" 
-        component={HistoryScreen}
-        options={{ title: 'History' }}
+        name="Plan" 
+        component={PlanScreen}
+        options={{ title: 'Plan' }}
       />
       <Tab.Screen 
         name="Settings" 

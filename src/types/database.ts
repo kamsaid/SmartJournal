@@ -313,7 +313,7 @@ export interface MorningCheckIn {
   user_id: string;
   date: string;
   thoughts_anxieties: string; // "Write out all your thoughts and anxieties"
-  great_day_vision: string; // "What would make today a great day?"
+  great_day_vision: string[]; // "What would make today a great day?" - Array of up to 3 items
   affirmations: string; // "Daily affirmations. I am..."
   gratitude: string; // "I am grateful for..."
   challenge_generated?: string; // Challenge ID generated from this morning check-in
@@ -331,9 +331,19 @@ export interface NightlyCheckIn {
   accomplishments: string[]; // "3 things you accomplished"
   emotions: string; // "What made you happy/sad today"
   morning_checkin_id?: string; // Reference to morning check-in for same date
-  great_day_reflection?: string; // AI analysis of how morning vision compared to reality
+  great_day_reflection?: GreatDayReflection; // AI analysis of how morning vision compared to reality (stored as JSONB)
   duration_minutes: number;
   created_at: string;
+}
+
+// AI alignment/reflection structure stored in nightly_check_ins.great_day_reflection (JSONB)
+export interface GreatDayReflection {
+  visionAlignment: number; // 0-1 scale of how well the day matched morning vision
+  alignedElements: string[];
+  missedElements: string[];
+  unexpectedPositives: string[];
+  learnings: string[];
+  tomorrowSuggestions: string[];
 }
 
 // Simplified User Progress
@@ -456,3 +466,28 @@ export interface FollowUpContext {
   contemplative_state?: string;
   previous_insights: string[];
 }
+
+// ---- PLAN TABLES ----
+// Stores clarified intents from morning check-ins
+export interface PlanIntent {
+  id: string;
+  user_id: string;
+  date: string; // YYYY-MM-DD format
+  intent_text: string; // Original text from morning check-in
+  clarified_text: string; // AI-clarified version
+  created_at: string;
+}
+
+// Stores atomic tasks for each intent
+export interface PlanTask {
+  id: string;
+  intent_id: string; // References PlanIntent
+  title: string;
+  est_minutes: number; // Estimated minutes (max 30)
+  status: 'pending' | 'done';
+  created_at: string;
+  updated_at?: string;
+}
+
+// Task status type for updates
+export type TaskStatus = 'pending' | 'done';

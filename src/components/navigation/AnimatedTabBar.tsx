@@ -1,10 +1,9 @@
 // AnimatedTabBar - Premium floating tab bar with micro-interactions
 import React from 'react';
-import { View, Pressable, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { 
   useSharedValue, 
-  useAnimatedStyle, 
   withTiming,
   Easing 
 } from 'react-native-reanimated';
@@ -13,7 +12,7 @@ import {
   CheckSquare, 
   CalendarClock, 
   NotebookPen, 
-  BarChart3, 
+  CheckSquare as PlanIcon, // Use CheckSquare for Plan tab
   Settings 
 } from 'lucide-react-native';
 import { theme } from '@/design-system';
@@ -34,7 +33,7 @@ interface AnimatedTabBarProps {
   activeTabKey: string;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+// Removed unused screen width
 const TAB_BAR_MARGIN = 16; // Reduced margin for cleaner look
 
 // Clean-Minimal Tab Bar Component
@@ -66,7 +65,7 @@ export default function AnimatedTabBar({
   }, [onTabPress, colorTransition]);
 
   // Render individual tab with Clean-Minimal styling
-  const renderTab = (tab: TabItem, index: number) => {
+  const renderTab = (tab: TabItem) => {
     const isActive = tab.key === activeTabKey;
     const IconComponent = tab.iconComponent;
 
@@ -231,10 +230,10 @@ export const TAB_CONFIG: TabItem[] = [
     iconComponent: NotebookPen,
   },
   {
-    key: 'History',
-    title: 'History',
-    icon: '📊',
-    iconComponent: BarChart3,
+    key: 'Plan',
+    title: 'Plan',
+    icon: '✅', // Updated icon for Plan
+    iconComponent: PlanIcon, // CheckSquare icon for Plan tab
   },
   {
     key: 'Settings',

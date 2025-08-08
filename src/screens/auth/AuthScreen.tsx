@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/hooks/useAuth';
 import { userService } from '@/services/supabase/userService';
 import { AnimatedButton, AnimatedTextInput, AnimatedCard, LoadingAnimation } from '@/components/animated';
-import { theme, SPRING_CONFIGS, AnimationFactories } from '@/design-system';
+import { theme, SPRING_CONFIGS } from '@/design-system';
 
 interface AuthScreenProps {
   navigation: any;

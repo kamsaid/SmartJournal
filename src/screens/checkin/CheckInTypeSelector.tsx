@@ -90,7 +90,7 @@ export default function CheckInTypeSelector({ onTypeSelect }: CheckInTypeSelecto
       duration: '5-8 minutes',
       questions: [
         'Write out thoughts & anxieties',
-        'What would make today great?',
+        'List 3 things that would make today great',
         'Daily affirmations',
         'Morning gratitude',
       ],

@@ -6,7 +6,7 @@ import {
   LeveragePoint,
 } from '@/types/database';
 import { systemsFramework } from '@/services/lifeSystems';
-import { patternRecognition } from '@/ai';
+import patternRecognition from '@/ai/patternRecognition';
 import { aiOrchestrator } from '@/services/openai';
 import { generateUUID } from '@/utils/uuid';
 

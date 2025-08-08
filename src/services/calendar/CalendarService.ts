@@ -4,10 +4,7 @@ import { morningCheckInService } from '../checkins/MorningCheckInService';
 import { nightlyCheckInService } from '../checkins/NightlyCheckInService';
 import { supabase } from '../supabase/client';
 
-export interface CalendarData {
-  dailySummaries: DailySummary[];
-  monthlyInsights: CalendarInsight;
-}
+// Removed unused CalendarData interface
 
 export interface DayData {
   morningCheckIn?: MorningCheckIn;

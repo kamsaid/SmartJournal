@@ -8,7 +8,6 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
-  interpolate,
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -340,7 +339,7 @@ interface SkeletonLoaderProps {
 }
 
 export function SkeletonLoader({
-  width = '100%',
+  width = 100,
   height = 20,
   borderRadius = theme.borderRadius.sm,
   style,

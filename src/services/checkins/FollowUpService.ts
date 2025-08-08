@@ -50,8 +50,8 @@ export const followUpService = {
         },
         {
           key: 'great_day_vision',
-          question: 'What would make today a great day?',
-          context: 'Set your intention for the day ahead',
+          question: 'List 3 things that would make today a great day',
+          context: 'Set specific intentions for your day ahead',
         },
         {
           key: 'affirmations',

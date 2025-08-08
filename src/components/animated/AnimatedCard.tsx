@@ -1,6 +1,6 @@
 // AnimatedCard - Premium card with glassmorphism and micro-interactions
 import React from 'react';
-import { View, ViewStyle, TouchableWithoutFeedback } from 'react-native';
+import { ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -41,6 +41,7 @@ export default function AnimatedCard({
   glowEffect = false,
   breathingAnimation = false,
   style,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contentStyle,
   hapticFeedback = true,
   borderGlow = false,
